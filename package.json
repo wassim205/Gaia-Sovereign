@@ -1,0 +1,26 @@
+{
+  "name": "gaia-sovereign",
+  "version": "1.0.0",
+  "description": "Personal Data Vault",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev:db": "docker compose up db -d",
+    "dev:all": "docker compose up db -d && pnpm dev",
+    "db:migrate": "cd apps/api && pnpm prisma migrate dev",
+    "db:studio": "cd apps/api && pnpm prisma studio",
+    "db:reset": "cd apps/api && pnpm prisma migrate reset",
+    "build": "pnpm --filter \"./apps/*\" build",
+    "test": "pnpm --filter \"./apps/*\" test",
+    "clean": "docker compose down -v && rm -rf node_modules apps/*/node_modules",
+    "start": "docker compose up -d"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1"
+  },
+  "keywords": [],
+  "author": "El Mourabit Wassim",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0"
+}
