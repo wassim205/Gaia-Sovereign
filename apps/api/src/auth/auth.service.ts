@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
 import { UsersService } from 'src/users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { PasswordService } from './services/password.service';
@@ -13,7 +12,7 @@ export class AuthService {
     private cryptoService: CryptoService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<User> {
+  async register(registerDto: RegisterDto) {
     const { username, email, password } = registerDto;
 
     const existingUser = await this.usersService.findByEmail(email);

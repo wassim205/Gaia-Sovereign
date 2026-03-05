@@ -1,7 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { User } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -14,10 +13,11 @@ export class AuthController {
 
     return {
       message: 'User registered successfully',
-      user: {
+      data: {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt,
       },
     };
