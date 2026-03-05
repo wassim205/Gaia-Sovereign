@@ -1,33 +1,25 @@
-FROM node:18-alpine AS builder
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies (faster than ci for development)
+RUN npm install --ignore-engines
 
+# Copy source code
 COPY . .
 
 # Generate Prisma Client
-RUN pnpm exec prisma generate
+RUN npx prisma generate
 
-# Build the application
-RUN pnpm run build
+# Build application
+RUN npm run build
 
-FROM node:alpine AS main
-
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-WORKDIR /app
-# Copy built application from base stage
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
 EXPOSE 4000
-CMD ["pnpm", "run", "start:dev"]
+CMD ["npm", "run", "start:dev"]
