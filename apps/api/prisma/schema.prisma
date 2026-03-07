@@ -18,18 +18,64 @@ enum UserRole {
   ADMIN
 }
 
+enum VaultCategory {
+  PROFILE
+  CONTACT
+  DOCUMENT
+  CREDENTIAL
+  NOTE
+  OTHER
+}
+
 model User {
-  id                  String      @id @default(uuid())
-  username            String      @unique
-  email               String      @unique
-  password            String      @map("password_hash")
-  role                UserRole    @default(USER)
-  status              Int         @default(1)
-  encryptedMasterKey  String?     @map("encrypted_master_key")
-  emailVerifiedAt     DateTime?   @map("email_verified_at")
-  createdAt           DateTime    @default(now()) @map("created_at")
-  updatedAt           DateTime    @updatedAt @map("updated_at")
-  deletedAt           DateTime?   @map("deleted_at")
+  id                  String        @id @default(uuid())
+  username            String        @unique
+  email               String        @unique
+  password            String        @map("password_hash")
+  role                UserRole      @default(USER)
+  status              Int           @default(1)
+  encryptedMasterKey  String?       @map("encrypted_master_key")
+  emailVerifiedAt     DateTime?     @map("email_verified_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  deletedAt           DateTime?     @map("deleted_at")
+  
+  vaultEntries        VaultEntry[]
   
   @@map("users")
+}
+
+model VaultEntry {
+  id          String         @id @default(uuid())
+  userId      String         @map("user_id")
+  title       String         @db.VarChar(255)
+  category    VaultCategory  @default(OTHER)
+  description String?        @db.Text
+  isFavorite  Boolean        @default(false) @map("is_favorite")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields      VaultField[]
+  
+  @@index([userId])
+  @@index([category])
+  @@index([userId, category])
+  @@map("vault_entries")
+}
+
+model VaultField {
+  id              String      @id @default(uuid())
+  vaultEntryId    String      @map("vault_entry_id")
+  fieldKey        String      @db.VarChar(100)
+  encryptedValue  String      @map("encrypted_value") @db.Text
+  fieldType       String      @default("text") @map("field_type") @db.VarChar(50)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  
+  vaultEntry      VaultEntry  @relation(fields: [vaultEntryId], references: [id], onDelete: Cascade)
+  
+  @@index([vaultEntryId])
+  @@index([fieldKey])
+  @@map("vault_fields")
 }
