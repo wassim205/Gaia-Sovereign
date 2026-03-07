@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       isGlobal: true,
       envFilePath: '../../.env',
     }),
+    CommonModule,
     AuthModule,
     UsersModule,
     PrismaModule,
