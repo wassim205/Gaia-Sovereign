@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Mail, Lock, User, Eye, EyeOff, ArrowRight, ArrowLeft, Check, Fingerprint, Key, Github } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { ToastContainer } from '@/components/ui/Toast';
+import { apiClient, type ErrorResponse } from '@/lib/api';
 
 const steps = [
   { id: 1, title: 'Account', description: 'Create your credentials' },
@@ -14,9 +17,12 @@ const steps = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
   const [form, setForm] = useState({
     email: '',
     username: '',
@@ -28,25 +34,83 @@ export default function RegisterPage() {
     agreeTerms: false,
   });
 
+  const addToast = (message: string, type: 'success' | 'error' | 'info') => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
   const update = (field: string, value: string | boolean) => 
     setForm({ ...form, [field]: value });
 
+  const validateStep1 = () => {
+    if (!form.email || !form.username || !form.password || !form.confirmPassword) {
+      setError('All fields are required');
+      return false;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    } else {
+    setError('');
+    
+    if (currentStep === 1) {
+      if (!validateStep1()) {
+        return;
+      }
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      if (!form.agreeTerms) {
+        setError('You must agree to the terms and conditions');
+        return;
+      }
+      
       setIsLoading(true);
-      // TODO: Implement API call
-      console.log('Register:', form);
-      setTimeout(() => {
+      
+      try {
+        const response = await apiClient.register({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        });
+        
+        addToast('Account created successfully! Redirecting to login...', 'success');
+        
+        // Redirect to login
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
+      } catch (err) {
+        const error = err as ErrorResponse;
+        const errorMessage = Array.isArray(error.message) 
+          ? error.message.join(', ') 
+          : error.message || 'Registration failed. Please try again.';
+        
+        setError(errorMessage);
+        addToast(errorMessage, 'error');
         setIsLoading(false);
-      }, 1000);
+      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <div className="min-h-screen bg-black text-white flex">
       {/* Left Panel — Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-linear-to-br from-black via-purple-950/20 to-black" />
@@ -190,6 +254,12 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {error && (
+              <div className="px-4 py-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+            
             <AnimatePresence mode="wait">
               {/* Step 1 */}
               {currentStep === 1 && (
@@ -405,5 +475,6 @@ export default function RegisterPage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

@@ -2,32 +2,67 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Fingerprint, Key, Github } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { ToastContainer } from '@/components/ui/Toast';
+import { apiClient, type ErrorResponse } from '@/lib/api';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
+
+  const addToast = (message: string, type: 'success' | 'error' | 'info') => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // TODO: Implement API call
-    console.log('Login:', { email, password });
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await apiClient.login({ email, password });
+      
+      // Store token in localStorage
+      localStorage.setItem('token', response.data.accessToken);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      addToast('Login successful! Redirecting...', 'success');
+      
+      // Redirect to dashboard or home
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage = Array.isArray(error.message) 
+        ? error.message.join(', ') 
+        : error.message || 'Login failed. Please try again.';
+      
+      setError(errorMessage);
+      addToast(errorMessage, 'error');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <div className="min-h-screen bg-black text-white flex">
       {/* Left Panel — Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center">
         {/* Background Effects */}
@@ -172,6 +207,12 @@ export default function LoginPage() {
 
           {/* Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+            
             <Input
               label="Email"
               type="email"
@@ -226,5 +267,6 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }
