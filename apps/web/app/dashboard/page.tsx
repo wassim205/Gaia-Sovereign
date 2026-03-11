@@ -20,6 +20,8 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
+  Trash2,
+  Edit,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import GlassCard from '@/components/ui/GlassCard';
@@ -27,6 +29,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { showToast } from '@/components/ui/Toast';
 import VaultEntryForm from '@/components/vault/VaultEntryForm';
+import DeleteConfirmModal from '@/components/vault/DeleteConfirmModal';
 import type { VaultEntry } from '@/lib/api';
 import { getVaultEntries, getCategoryCounts } from '@/lib/api';
 
@@ -65,9 +68,11 @@ interface VaultItemProps {
   encrypted: boolean;
   isRevealed: boolean;
   onToggle: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-function VaultItem({ icon: Icon, label, value, encrypted, isRevealed, onToggle }: VaultItemProps) {
+function VaultItem({ icon: Icon, label, value, encrypted, isRevealed, onToggle, onEdit, onDelete }: VaultItemProps) {
   const displayValue = encrypted && !isRevealed ? '•'.repeat(20) : value;
 
   const handleCopy = () => {
@@ -84,7 +89,27 @@ function VaultItem({ icon: Icon, label, value, encrypted, isRevealed, onToggle }
           </div>
           <span className="text-sm font-medium text-white/80">{label}</span>
         </div>
-        {encrypted && <Lock className="w-3 h-3 text-emerald-400" />}
+        <div className="flex items-center gap-2">
+          {encrypted && <Lock className="w-3 h-3 text-emerald-400" />}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 transition-colors"
+              title="Edit entry"
+            >
+              <Edit className="w-3.5 h-3.5 text-blue-400" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 transition-colors"
+              title="Delete entry"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 text-sm text-white/60 font-mono truncate">{displayValue}</div>
@@ -150,6 +175,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VaultEntry | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingEntry, setDeletingEntry] = useState<VaultEntry | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -184,6 +211,22 @@ export default function DashboardPage() {
   const handleAddClick = () => {
     setEditingEntry(null);
     setIsFormOpen(true);
+  };
+
+  const handleEditClick = (entry: VaultEntry) => {
+    setEditingEntry(entry);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteClick = (entry: VaultEntry) => {
+    setDeletingEntry(entry);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    fetchDashboardData();
+    setIsDeleteModalOpen(false);
+    setDeletingEntry(null);
   };
 
   const toggleReveal = (fieldId: string) => {
@@ -258,6 +301,8 @@ export default function DashboardPage() {
                     encrypted={true}
                     isRevealed={revealedFields.includes(entry.id)}
                     onToggle={() => toggleReveal(entry.id)}
+                    onEdit={() => handleEditClick(entry)}
+                    onDelete={() => handleDeleteClick(entry)}
                   />
                 );
               })}
@@ -309,6 +354,14 @@ export default function DashboardPage() {
         onClose={() => setIsFormOpen(false)}
         onSuccess={handleFormSuccess}
         entry={editingEntry}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onSuccess={handleDeleteSuccess}
+        entry={deletingEntry}
       />
     </DashboardLayout>
   );
