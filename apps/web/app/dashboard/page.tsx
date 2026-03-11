@@ -26,6 +26,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { showToast } from '@/components/ui/Toast';
+import VaultEntryForm from '@/components/vault/VaultEntryForm';
 import type { VaultEntry } from '@/lib/api';
 import { getVaultEntries, getCategoryCounts } from '@/lib/api';
 
@@ -147,6 +148,8 @@ export default function DashboardPage() {
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [stats, setStats] = useState({ total: 0, tokens: 3, requests: 12, health: 98 });
   const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<VaultEntry | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -154,7 +157,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [entriesResponse, countsResponse] = await Promise.all([
+      const [entriesResponse] = await Promise.all([
         getVaultEntries({ page: 1, limit: 10 }),
         getCategoryCounts().catch(() => []),
       ]);
@@ -170,6 +173,17 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormSuccess = () => {
+    fetchDashboardData();
+    setIsFormOpen(false);
+    setEditingEntry(null);
+  };
+
+  const handleAddClick = () => {
+    setEditingEntry(null);
+    setIsFormOpen(true);
   };
 
   const toggleReveal = (fieldId: string) => {
@@ -207,7 +221,7 @@ export default function DashboardPage() {
         <div className="xl:col-span-2 space-y-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Your Vault</h2>
-            <Button variant="primary" className="gap-2">
+            <Button variant="primary" className="gap-2" onClick={handleAddClick}>
               <Plus className="w-4 h-4" />
               Add Data
             </Button>
@@ -288,6 +302,14 @@ export default function DashboardPage() {
           <RecentAccess />
         </div>
       </div>
+
+      {/* Vault Entry Form Modal */}
+      <VaultEntryForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSuccess={handleFormSuccess}
+        entry={editingEntry}
+      />
     </DashboardLayout>
   );
 }
