@@ -81,12 +81,12 @@ class ApiClient {
     const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: \`Bearer \${token}\` }),
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await fetch(\`\${this.baseUrl}/api/auth/register\`, {
+    const response = await fetch(`${this.baseUrl}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ class ApiClient {
   }
 
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await fetch(\`\${this.baseUrl}/api/auth/login\`, {
+    const response = await fetch(`${this.baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ class ApiClient {
     if (params?.category) queryParams.set('category', params.category);
 
     const response = await fetch(
-      \`\${this.baseUrl}/api/vault?\${queryParams.toString()}\`,
+      `${this.baseUrl}/api/vault?${queryParams.toString()}`,
       {
         headers: this.getAuthHeaders(),
       }
@@ -150,7 +150,7 @@ class ApiClient {
   }
 
   async getVaultEntry(id: string): Promise<VaultEntry> {
-    const response = await fetch(\`\${this.baseUrl}/api/vault/\${id}\`, {
+    const response = await fetch(`${this.baseUrl}/api/vault/${id}`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -164,7 +164,7 @@ class ApiClient {
   }
 
   async createVaultEntry(data: CreateVaultEntryData): Promise<VaultEntry> {
-    const response = await fetch(\`\${this.baseUrl}/api/vault\`, {
+    const response = await fetch(`${this.baseUrl}/api/vault`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -183,7 +183,7 @@ class ApiClient {
     id: string,
     data: Partial<CreateVaultEntryData>
   ): Promise<VaultEntry> {
-    const response = await fetch(\`\${this.baseUrl}/api/vault/\${id}\`, {
+    const response = await fetch(`${this.baseUrl}/api/vault/${id}`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -199,7 +199,7 @@ class ApiClient {
   }
 
   async deleteVaultEntry(id: string): Promise<void> {
-    const response = await fetch(\`\${this.baseUrl}/api/vault/\${id}\`, {
+    const response = await fetch(`${this.baseUrl}/api/vault/${id}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -212,7 +212,7 @@ class ApiClient {
 
   async getCategoryCounts(): Promise<CategoryCount[]> {
     const response = await fetch(
-      \`\${this.baseUrl}/api/vault/categories/counts\`,
+      `${this.baseUrl}/api/vault/categories/counts`,
       {
         headers: this.getAuthHeaders(),
       }
