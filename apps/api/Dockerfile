@@ -1,16 +1,15 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies for Prisma
+# Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
+# Install dependencies (faster than ci for development)
 RUN npm install --ignore-engines
 
 # Copy source code
@@ -22,28 +21,5 @@ RUN npx prisma generate
 # Build application
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
-
-# Copy package files
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install production dependencies only
-RUN npm install --production --ignore-engines
-
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# Generate Prisma Client (needed for production)
-RUN npx prisma generate
-
 EXPOSE 4000
-
-CMD ["npm", "run", "start:prod"]
+CMD ["npm", "run", "start:dev"]

@@ -1,8 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: gaia-db
-    restart: unless-stopped
+    container_name: gaiasovereign-db
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
@@ -16,48 +15,38 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - gaia-network
+    restart: unless-stopped
 
   api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    container_name: gaia-api
-    restart: unless-stopped
+    container_name: gaiasovereign-api
     ports:
       - "4000:4000"
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-gaia_sovereign}
+      DATABASE_URL: "postgresql://postgres:password@db:5432/gaia_sovereign"
+      BACKEND_PORT: 4000
+      NODE_ENV: ${NODE_ENV:-development}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
-      BACKEND_PORT: 4000
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - gaia-network
+    restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
-    container_name: gaia-web
-    restart: unless-stopped
+    container_name: gaiasovereign-web
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://api:4000/api
+      NEXT_PUBLIC_API_URL: "http://localhost:4000"
     depends_on:
       - api
-    networks:
-      - gaia-network
+    restart: unless-stopped
 
 volumes:
   db_data:
-
-networks:
-  gaia-network:
-    driver: bridge

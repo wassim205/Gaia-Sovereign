@@ -1,47 +1,41 @@
-# Build stage
 FROM node:20-alpine AS builder
 
-WORKDIR /app
-
-# Enable pnpm
+# Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Set working directory
+WORKDIR /app
 
-# Copy web app package.json
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
+
+# Copy app package.json
 COPY apps/web/package.json ./apps/web/
 
-# Install all dependencies
+# Install dependencies
 RUN pnpm install
 
-# Copy web app source
+# Copy source code
 COPY apps/web ./apps/web
 
-# Build the Next.js application
+# Build the application
 WORKDIR /app/apps/web
-RUN pnpm build
+RUN pnpm run build
 
-# Production stage
-FROM node:20-alpine
+FROM node:20-alpine AS main
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy package files
+# Copy package files for production
 COPY --from=builder /app/apps/web/package.json ./
+COPY --from=builder /app/apps/web/pnpm-lock.yaml* ./
+COPY --from=builder /app/apps/web/.next ./.next
+COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder /app/apps/web/next.config.ts ./
 
-# Copy built application
-COPY --from=builder /app/apps/web/.next/standalone ./
-COPY --from=builder /app/apps/web/.next/static ./.next/static
-COPY --from=builder /app/apps/web/public ./public
+# Install production dependencies only
+RUN pnpm install --prod
 
 EXPOSE 3000
-
-ENV NODE_ENV=production
-ENV PORT=3000
-
-CMD ["node", "server.js"]
+CMD ["pnpm", "start"]
