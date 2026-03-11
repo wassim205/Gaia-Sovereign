@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -47,6 +47,24 @@ export default function VaultEntryForm({ isOpen, onClose, onSuccess, entry }: Va
     entry?.fields || [{ fieldKey: '', value: '', fieldType: 'text' }]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form when entry changes (for edit mode)
+  useEffect(() => {
+    if (entry) {
+      setTitle(entry.title);
+      setCategory(entry.category);
+      setDescription(entry.description || '');
+      setIsFavorite(entry.isFavorite || false);
+      setFields(entry.fields);
+    } else {
+      // Reset form for create mode
+      setTitle('');
+      setCategory('OTHER');
+      setDescription('');
+      setIsFavorite(false);
+      setFields([{ fieldKey: '', value: '', fieldType: 'text' }]);
+    }
+  }, [entry]);
 
   const handleAddField = () => {
     setFields([...fields, { fieldKey: '', value: '', fieldType: 'text' }]);

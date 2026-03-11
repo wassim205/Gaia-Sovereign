@@ -22,6 +22,8 @@ import {
   TrendingDown,
   Trash2,
   Edit,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import GlassCard from '@/components/ui/GlassCard';
@@ -62,35 +64,48 @@ function StatCard({ label, value, change, icon: Icon, trend }: StatCardProps) {
 
 // VaultItem Component
 interface VaultItemProps {
+  entry: VaultEntry;
   icon: React.ElementType;
-  label: string;
-  value: string;
-  encrypted: boolean;
   isRevealed: boolean;
   onToggle: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-function VaultItem({ icon: Icon, label, value, encrypted, isRevealed, onToggle, onEdit, onDelete }: VaultItemProps) {
-  const displayValue = encrypted && !isRevealed ? '•'.repeat(20) : value;
+function VaultItem({ entry, icon: Icon, isRevealed, onToggle, onEdit, onDelete }: VaultItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
     showToast('Copied to clipboard', 'success');
   };
 
   return (
     <GlassCard className="p-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1">
           <div className="p-2 bg-white/5 rounded-lg">
             <Icon className="w-4 h-4 text-white/60" />
           </div>
-          <span className="text-sm font-medium text-white/80">{label}</span>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-white/80">{entry.title}</div>
+            <div className="text-xs text-white/40">{entry.fields.length} field(s)</div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          {encrypted && <Lock className="w-3 h-3 text-emerald-400" />}
+          <Lock className="w-3 h-3 text-emerald-400" />
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            {isExpanded ? (
+              <ChevronUp className="w-3.5 h-3.5 text-white/60" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-white/60" />
+            )}
+          </button>
           {onEdit && (
             <button
               onClick={onEdit}
@@ -111,25 +126,57 @@ function VaultItem({ icon: Icon, label, value, encrypted, isRevealed, onToggle, 
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 text-sm text-white/60 font-mono truncate">{displayValue}</div>
-        <div className="flex gap-1">
-          {encrypted && (
+
+      {/* Fields */}
+      {isExpanded && (
+        <div className="space-y-2 pt-2 border-t border-white/10">
+          {entry.fields.map((field, idx) => {
+            const displayValue = isRevealed ? field.value : '•'.repeat(Math.min(field.value.length, 20));
+            return (
+              <div key={idx} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg">
+                <div className="flex-1">
+                  <div className="text-xs text-white/60 mb-1">{field.fieldKey}</div>
+                  <div className="text-sm text-white/80 font-mono truncate">{displayValue}</div>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleCopy(field.value)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    title="Copy"
+                  >
+                    <Copy className="w-3 h-3 text-white/60" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex justify-end pt-2">
             <button
               onClick={onToggle}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              className="text-xs text-white/60 hover:text-white/80 transition-colors flex items-center gap-1"
             >
-              {isRevealed ? <EyeOff className="w-3.5 h-3.5 text-white/60" /> : <Eye className="w-3.5 h-3.5 text-white/60" />}
+              {isRevealed ? (
+                <>
+                  <EyeOff className="w-3 h-3" />
+                  Hide values
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3 h-3" />
+                  Reveal values
+                </>
+              )}
             </button>
-          )}
-          <button
-            onClick={handleCopy}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-          >
-            <Copy className="w-3.5 h-3.5 text-white/60" />
-          </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Preview (when collapsed) */}
+      {!isExpanded && entry.fields.length > 0 && (
+        <div className="text-xs text-white/40 truncate">
+          {entry.fields[0].fieldKey}: {isRevealed ? entry.fields[0].value : '••••••••'}
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -288,17 +335,12 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vaultEntries.map((entry) => {
                 const Icon = getCategoryIcon(entry.category);
-                // Get first field for display
-                const firstField = entry.fields[0];
-                if (!firstField) return null;
                 
                 return (
                   <VaultItem
                     key={entry.id}
+                    entry={entry}
                     icon={Icon}
-                    label={entry.title}
-                    value={firstField.value}
-                    encrypted={true}
                     isRevealed={revealedFields.includes(entry.id)}
                     onToggle={() => toggleReveal(entry.id)}
                     onEdit={() => handleEditClick(entry)}
