@@ -26,6 +26,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { showToast } from '@/components/ui/Toast';
+import type { VaultEntry } from '@/lib/api';
 import { getVaultEntries, getCategoryCounts } from '@/lib/api';
 
 // StatCard Component
@@ -143,7 +144,8 @@ function RecentAccess() {
 
 export default function DashboardPage() {
   const [revealedFields, setRevealedFields] = useState<string[]>([]);
-  const [vaultEntries, setVaultEntries] = useState<any[]>([]);
+  const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
+  const [stats, setStats] = useState({ total: 0, tokens: 3, requests: 12, health: 98 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -152,10 +154,19 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const entries = await getVaultEntries({ page: 1, limit: 6 });
-      setVaultEntries(entries.data || []);
-    } catch (error) {
+      const [entriesResponse, countsResponse] = await Promise.all([
+        getVaultEntries({ page: 1, limit: 10 }),
+        getCategoryCounts().catch(() => []),
+      ]);
+      
+      setVaultEntries(entriesResponse.data || []);
+      setStats(prev => ({
+        ...prev,
+        total: entriesResponse.meta?.total || 0,
+      }));
+    } catch (err) {
       showToast('Failed to load vault data', 'error');
+      console.error('Error loading dashboard:', err);
     } finally {
       setLoading(false);
     }
@@ -167,24 +178,27 @@ export default function DashboardPage() {
     );
   };
 
-  // Mock data for demo (will be replaced with real API data)
-  const mockVaultData = [
-    { id: '1', icon: User, label: 'Full Name', value: 'Wassim El Mourabit', encrypted: false },
-    { id: '2', icon: Mail, label: 'Email Address', value: 'wassim@example.com', encrypted: true },
-    { id: '3', icon: Phone, label: 'Phone Number', value: '+1-234-567-8900', encrypted: true },
-    { id: '4', icon: CreditCard, label: 'Credit Card', value: '4532-****-****-1234', encrypted: true },
-    { id: '5', icon: MapPin, label: 'Home Address', value: '123 Main St, City, State 12345', encrypted: true },
-    { id: '6', icon: FileText, label: 'Passport ID', value: 'AB123456789', encrypted: true },
-  ];
+  // Map category to icon
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, React.ElementType> = {
+      PROFILE: User,
+      CONTACT: Mail,
+      DOCUMENT: FileText,
+      CREDENTIAL: Key,
+      NOTE: FileText,
+      OTHER: FileText,
+    };
+    return icons[category] || FileText;
+  };
 
   return (
     <DashboardLayout>
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <StatCard label="Data Fields" value={6} change="+12%" icon={Database} trend="up" />
-        <StatCard label="Active Tokens" value={3} change="+8%" icon={Key} trend="up" />
-        <StatCard label="Access Requests" value={12} change="-5%" icon={Shield} trend="down" />
-        <StatCard label="Vault Health" value="98%" change="+2%" icon={Activity} trend="up" />
+        <StatCard label="Data Fields" value={stats.total} change="+12%" icon={Database} trend="up" />
+        <StatCard label="Active Tokens" value={stats.tokens} change="+8%" icon={Key} trend="up" />
+        <StatCard label="Access Requests" value={stats.requests} change="-5%" icon={Shield} trend="down" />
+        <StatCard label="Vault Health" value={`${stats.health}%`} change="+2%" icon={Activity} trend="up" />
       </div>
 
       {/* Main Content Grid */}
@@ -205,19 +219,34 @@ export default function DashboardPage() {
                 <p className="text-white/60">Loading vault data...</p>
               </div>
             </GlassCard>
+          ) : vaultEntries.length === 0 ? (
+            <GlassCard className="p-6">
+              <div className="text-center py-12">
+                <Database className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                <p className="text-white/60 mb-2">No vault entries yet</p>
+                <p className="text-white/40 text-sm">Create your first entry to secure your data</p>
+              </div>
+            </GlassCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockVaultData.map((item) => (
-                <VaultItem
-                  key={item.id}
-                  icon={item.icon}
-                  label={item.label}
-                  value={item.value}
-                  encrypted={item.encrypted}
-                  isRevealed={revealedFields.includes(item.id)}
-                  onToggle={() => toggleReveal(item.id)}
-                />
-              ))}
+              {vaultEntries.map((entry) => {
+                const Icon = getCategoryIcon(entry.category);
+                // Get first field for display
+                const firstField = entry.fields[0];
+                if (!firstField) return null;
+                
+                return (
+                  <VaultItem
+                    key={entry.id}
+                    icon={Icon}
+                    label={entry.title}
+                    value={firstField.value}
+                    encrypted={true}
+                    isRevealed={revealedFields.includes(entry.id)}
+                    onToggle={() => toggleReveal(entry.id)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

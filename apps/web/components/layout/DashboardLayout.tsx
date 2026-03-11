@@ -40,19 +40,35 @@ const userLinks: SidebarLink[] = [
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  userName?: string;
-  userRole?: string;
 }
 
 export default function DashboardLayout({
   children,
-  userName = 'User',
-  userRole = 'Member',
 }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Get user data from localStorage
+  const getUserData = () => {
+    if (typeof window === 'undefined') return { username: 'User', role: 'User' };
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        return {
+          username: user.username || 'User',
+          role: user.role || 'User',
+        };
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+    return { username: 'User', role: 'User' };
+  };
+
+  const { username: userName, role: userRole } = getUserData();
 
   // Check if user is logged in
   useEffect(() => {
@@ -271,7 +287,7 @@ export default function DashboardLayout({
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-white/5">
               <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                {userName.split(' ').map((n) => n[0]).join('')}
+                {userName.split(' ').map((n: string) => n[0]).join('')}
               </div>
               <div className="hidden xl:block">
                 <div className="text-sm font-medium text-white">{userName}</div>
