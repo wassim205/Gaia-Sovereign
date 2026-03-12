@@ -91,7 +91,10 @@ export default function VaultEntryForm({ isOpen, onClose, onSuccess, entry }: Va
       return;
     }
 
-    const validFields = fields.filter(f => f.fieldKey.trim() && f.value.trim());
+    const validFields = fields
+      .filter(f => f.fieldKey.trim() && f.value.trim())
+      .map(({ fieldKey, value, fieldType }) => ({ fieldKey, value, fieldType })); // Strip DB fields
+    
     if (validFields.length === 0) {
       showToast('At least one field is required', 'error');
       return;
