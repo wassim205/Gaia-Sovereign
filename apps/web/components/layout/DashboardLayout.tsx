@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,19 +55,19 @@ export default function DashboardLayout({
   const router = useRouter();
 
   // Toast management
-  const addToast = (message: string, type: ToastType) => {
+  const addToast = useCallback((message: string, type: ToastType) => {
     const id = Math.random().toString(36).substring(7);
     setToasts((prev) => [...prev, { id, message, type }]);
-  };
+  }, []);
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
+  }, []);
 
   // Initialize toast callback
   useEffect(() => {
     setToastCallback(addToast);
-  }, []);
+  }, [addToast]);
 
   // Get user data from localStorage
   const getUserData = () => {
