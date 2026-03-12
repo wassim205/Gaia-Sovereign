@@ -8,3 +8,4 @@ dist
 .vscode
 coverage
 DATABASE_SCHEMA.md
+FRONTEND_DESIGN
