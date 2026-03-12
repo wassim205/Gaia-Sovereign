@@ -30,6 +30,7 @@ import DeleteConfirmModal from '@/components/vault/DeleteConfirmModal';
 import { getVaultEntries, getCategoryCounts } from '@/lib/api';
 import { showToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import { StatCardSkeleton, VaultItemSkeleton, TokenCardSkeleton, ActionButtonSkeleton, RecentAccessSkeleton } from '@/components/ui/LoadingSkeleton';
 
 import type { LucideProps } from 'lucide-react';
 import type { VaultEntry } from '@/lib/api';
@@ -156,7 +157,7 @@ function VaultItem({
 
 // ==================== RECENT ACCESS ====================
 
-function RecentAccess() {
+function RecentAccess({ loading }: { loading: boolean }) {
   const accesses = [
     { app: 'ShopNow', fields: ['Name', 'Email'], time: '2 min ago', status: 'active' as const },
     { app: 'DeliverIt', fields: ['Name', 'Phone', 'Address'], time: '1 hour ago', status: 'active' as const },
@@ -172,7 +173,16 @@ function RecentAccess() {
         <button className="text-xs text-white/30 hover:text-white/60 transition-colors">View all</button>
       </div>
       <div className="space-y-3">
-        {accesses.map((access, i) => (
+        {loading ? (
+          <>
+            <RecentAccessSkeleton />
+            <RecentAccessSkeleton />
+            <RecentAccessSkeleton />
+            <RecentAccessSkeleton />
+            <RecentAccessSkeleton />
+          </>
+        ) : (
+          accesses.map((access, i) => (
           <motion.div
             key={i}
             className="flex items-center justify-between p-3 rounded-lg bg-white/2 border border-white/5"
@@ -196,7 +206,8 @@ function RecentAccess() {
               </Badge>
             </div>
           </motion.div>
-        ))}
+          ))
+        )}
       </div>
     </GlassCard>
   );
@@ -304,10 +315,21 @@ export default function UserDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Database} label="Data Fields" value={stats.total.toString()} change="+1" trend="up" />
-        <StatCard icon={Key} label="Active Tokens" value={stats.tokens.toString()} change="-2" trend="down" />
-        <StatCard icon={Shield} label="Access Requests" value={stats.requests.toString()} change="+4" trend="up" />
-        <StatCard icon={Activity} label="Vault Health" value={`${stats.health}%`} />
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard icon={Database} label="Data Fields" value={stats.total.toString()} change="+1" trend="up" />
+            <StatCard icon={Key} label="Active Tokens" value={stats.tokens.toString()} change="-2" trend="down" />
+            <StatCard icon={Shield} label="Access Requests" value={stats.requests.toString()} change="+4" trend="up" />
+            <StatCard icon={Activity} label="Vault Health" value={`${stats.health}%`} />
+          </>
+        )}
       </div>
 
       {/* Main Grid */}
@@ -337,8 +359,13 @@ export default function UserDashboard() {
             </div>
 
             {loading ? (
-              <div className="text-center py-12">
-                <p className="text-white/60">Loading vault data...</p>
+              <div className="space-y-2">
+                <VaultItemSkeleton />
+                <VaultItemSkeleton />
+                <VaultItemSkeleton />
+                <VaultItemSkeleton />
+                <VaultItemSkeleton />
+                <VaultItemSkeleton />
               </div>
             ) : vaultItems.length === 0 ? (
               <div className="text-center py-12">
@@ -378,14 +405,21 @@ export default function UserDashboard() {
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-sm font-semibold text-white">Active Tokens</h3>
-              <Badge variant="success">3 active</Badge>
+              {!loading && <Badge variant="success">3 active</Badge>}
             </div>
             <div className="space-y-3">
-              {[
-                { app: 'ShopNow', fields: 3, expires: '23h 14m', color: 'from-blue-500 to-cyan-500' },
-                { app: 'DeliverIt', fields: 3, expires: '18h 42m', color: 'from-green-500 to-emerald-500' },
-                { app: 'SocialHub', fields: 2, expires: '6h 08m', color: 'from-purple-500 to-pink-500' },
-              ].map((token, i) => (
+              {loading ? (
+                <>
+                  <TokenCardSkeleton />
+                  <TokenCardSkeleton />
+                  <TokenCardSkeleton />
+                </>
+              ) : (
+                [
+                  { app: 'ShopNow', fields: 3, expires: '23h 14m', color: 'from-blue-500 to-cyan-500' },
+                  { app: 'DeliverIt', fields: 3, expires: '18h 42m', color: 'from-green-500 to-emerald-500' },
+                  { app: 'SocialHub', fields: 2, expires: '6h 08m', color: 'from-purple-500 to-pink-500' },
+                ].map((token, i) => (
                 <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/2 border border-white/5">
                   <div className="flex items-center gap-3">
                     <div className={cn('w-8 h-8 rounded-lg bg-linear-to-br flex items-center justify-center text-xs font-bold text-white', token.color)}>
@@ -404,7 +438,8 @@ export default function UserDashboard() {
                     <button className="text-[10px] text-red-400 hover:text-red-300 mt-1 transition-colors">Revoke</button>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </GlassCard>
 
@@ -412,23 +447,32 @@ export default function UserDashboard() {
           <GlassCard className="p-6" hover={false}>
             <h3 className="text-sm font-semibold text-white mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { icon: Plus, label: 'Add Data', color: 'bg-indigo-500/10 text-indigo-400', action: handleAddClick },
-                { icon: Key, label: 'New Token', color: 'bg-emerald-500/10 text-emerald-400', action: () => {} },
-                { icon: Unlock, label: 'Revoke All', color: 'bg-red-500/10 text-red-400', action: () => {} },
-                { icon: ArrowUpRight, label: 'Export', color: 'bg-amber-500/10 text-amber-400', action: () => {} },
-              ].map((action) => (
-                <button
-                  key={action.label}
-                  onClick={action.action}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-white/2 border border-white/5 hover:bg-white/5 hover:border-white/10 transition-all text-left"
-                >
-                  <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', action.color)}>
-                    <action.icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-medium text-white/60">{action.label}</span>
-                </button>
-              ))}
+              {loading ? (
+                <>
+                  <ActionButtonSkeleton />
+                  <ActionButtonSkeleton />
+                  <ActionButtonSkeleton />
+                  <ActionButtonSkeleton />
+                </>
+              ) : (
+                [
+                  { icon: Plus, label: 'Add Data', color: 'bg-indigo-500/10 text-indigo-400', action: handleAddClick },
+                  { icon: Key, label: 'New Token', color: 'bg-emerald-500/10 text-emerald-400', action: () => {} },
+                  { icon: Unlock, label: 'Revoke All', color: 'bg-red-500/10 text-red-400', action: () => {} },
+                  { icon: ArrowUpRight, label: 'Export', color: 'bg-amber-500/10 text-amber-400', action: () => {} },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={action.action}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-white/2 border border-white/5 hover:bg-white/5 hover:border-white/10 transition-all text-left"
+                  >
+                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', action.color)}>
+                      <action.icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-medium text-white/60">{action.label}</span>
+                  </button>
+                ))
+              )}
             </div>
           </GlassCard>
         </div>
@@ -436,7 +480,7 @@ export default function UserDashboard() {
 
       {/* Recent Access */}
       <div className="mt-6">
-        <RecentAccess />
+        <RecentAccess loading={loading} />
       </div>
 
       {/* Modals */}

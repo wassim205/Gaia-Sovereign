@@ -29,6 +29,7 @@ import VaultEntryForm from '@/components/vault/VaultEntryForm';
 import DeleteConfirmModal from '@/components/vault/DeleteConfirmModal';
 import type { VaultEntry } from '@/lib/api';
 import { getVaultEntries, getCategoryCounts } from '@/lib/api';
+import { VaultItemSkeleton } from '@/components/ui/LoadingSkeleton';
 
 // Category stats component
 interface CategoryStatProps {
@@ -376,12 +377,14 @@ export default function VaultPage() {
 
       {/* Vault Entries */}
       {loading ? (
-        <GlassCard className="p-12">
-          <div className="text-center">
-            <Database className="w-12 h-12 text-white/20 mx-auto mb-4 animate-pulse" />
-            <p className="text-white/60">Loading vault data...</p>
-          </div>
-        </GlassCard>
+        <div className="space-y-4">
+          <VaultItemSkeleton />
+          <VaultItemSkeleton />
+          <VaultItemSkeleton />
+          <VaultItemSkeleton />
+          <VaultItemSkeleton />
+          <VaultItemSkeleton />
+        </div>
       ) : filteredEntries.length === 0 ? (
         <GlassCard className="p-12">
           <div className="text-center">

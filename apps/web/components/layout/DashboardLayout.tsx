@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ToastContainer, setToastCallback, type ToastType } from '@/components/ui/Toast';
 
 type IconComponent = React.ComponentType<LucideProps>;
 
@@ -49,8 +50,24 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Toast management
+  const addToast = (message: string, type: ToastType) => {
+    const id = Math.random().toString(36).substring(7);
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  // Initialize toast callback
+  useEffect(() => {
+    setToastCallback(addToast);
+  }, []);
 
   // Get user data from localStorage
   const getUserData = () => {
@@ -371,6 +388,9 @@ export default function DashboardLayout({
         {/* Page Content */}
         <div className="p-6 lg:p-8">{children}</div>
       </motion.main>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }
