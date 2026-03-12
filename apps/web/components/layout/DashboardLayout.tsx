@@ -12,6 +12,8 @@ import {
   History,
   Settings,
   Key,
+  Users,
+  Code2,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -155,8 +157,42 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Logout Button */}
+        {/* Portal Switcher & Logout */}
         <div className="px-3 py-3 border-t border-white/5">
+          {!collapsed && (
+            <div className="space-y-1 mb-3">
+              <Link
+                href="/dashboard"
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                  pathname.startsWith('/dashboard') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                )}
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                href="/admin"
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                  pathname.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </Link>
+              <Link
+                href="/developer"
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                  pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                )}
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Developer</span>
+              </Link>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className={cn(
@@ -248,6 +284,41 @@ export default function DashboardLayout({
                 })}
               </nav>
               <div className="px-3 py-3 border-t border-white/5">
+                <div className="space-y-1 mb-3">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                      pathname.startsWith('/dashboard') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                    )}
+                  >
+                    <Database className="w-3.5 h-3.5" />
+                    <span>Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                      pathname.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                    )}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Admin</span>
+                  </Link>
+                  <Link
+                    href="/developer"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                      pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                    )}
+                  >
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>Developer</span>
+                  </Link>
+                </div>
                 <button
                   onClick={() => { handleLogout(); setMobileOpen(false); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/30 hover:text-white/60 w-full"
