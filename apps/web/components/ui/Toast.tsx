@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
 
@@ -69,4 +69,20 @@ export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
       </AnimatePresence>
     </div>
   );
+}
+
+// Simple toast manager for standalone use
+let toastCallback: ((message: string, type: ToastType) => void) | null = null;
+
+export function setToastCallback(callback: (message: string, type: ToastType) => void) {
+  toastCallback = callback;
+}
+
+export function showToast(message: string, type: ToastType = 'info') {
+  if (toastCallback) {
+    toastCallback(message, type);
+  } else {
+    // Fallback to console if toast system not initialized
+    console.log(`[${type.toUpperCase()}] ${message}`);
+  }
 }

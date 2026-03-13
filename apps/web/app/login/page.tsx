@@ -42,9 +42,9 @@ export default function LoginPage() {
       
       addToast('Login successful! Redirecting...', 'success');
       
-      // Redirect to dashboard or home
+      // Redirect to dashboard
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 1000);
     } catch (err) {
       const error = err as ErrorResponse;
@@ -175,7 +175,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-2">Sign in</h2>
             <p className="text-sm text-white/40">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/register" className="text-white hover:text-white/80 underline underline-offset-4">
                 Create one
               </Link>
