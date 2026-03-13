@@ -18,6 +18,11 @@ enum UserRole {
   ADMIN
 }
 
+enum ThirdPartyAppStatus {
+  ACTIVE
+  BLOCKED
+}
+
 enum VaultCategory {
   PROFILE
   CONTACT
@@ -41,8 +46,29 @@ model User {
   deletedAt           DateTime?     @map("deleted_at")
   
   vaultEntries        VaultEntry[]
+  thirdPartyApps      ThirdPartyApp[]
   
   @@map("users")
+}
+
+model ThirdPartyApp {
+  id                String              @id @default(uuid())
+  ownerId           String              @map("owner_id")
+  name              String              @db.VarChar(255)
+  description       String?             @db.Text
+  clientId          String              @unique @map("client_id") @db.VarChar(64)
+  secretHash        String              @map("secret_hash") @db.VarChar(255)
+  status            ThirdPartyAppStatus @default(ACTIVE)
+  redirectUris      String[]            @map("redirect_uris")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  secretRotatedAt   DateTime?           @map("secret_rotated_at")
+
+  owner             User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("third_party_apps")
 }
 
 model VaultEntry {
