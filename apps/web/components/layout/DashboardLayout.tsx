@@ -38,7 +38,7 @@ const userLinks: SidebarLink[] = [
   { href: '/dashboard/vault', icon: Database, label: 'My Vault' },
   { href: '/dashboard/access', icon: Key, label: 'Access Control' },
   { href: '/dashboard/history', icon: History, label: 'Audit Log' },
-  { href: '/dashboard/developer', icon: Code2, label: 'Developer Portal' },
+  { href: '/developer', icon: Code2, label: 'Developer Portal' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -308,7 +308,7 @@ export default function DashboardLayout({
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      pathname.startsWith('/dashboard') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                      pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                     )}
                   >
                     <Database className="w-3.5 h-3.5" />
