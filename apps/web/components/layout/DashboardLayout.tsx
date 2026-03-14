@@ -38,6 +38,7 @@ const userLinks: SidebarLink[] = [
   { href: '/dashboard/vault', icon: Database, label: 'My Vault' },
   { href: '/dashboard/access', icon: Key, label: 'Access Control' },
   { href: '/dashboard/history', icon: History, label: 'Audit Log' },
+  { href: '/dashboard/developer', icon: Code2, label: 'Developer Portal' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
