@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Key,
@@ -9,444 +9,404 @@ import {
   EyeOff,
   Plus,
   Trash2,
+  Clock,
   Check,
+  Code2,
+  Terminal,
+  BookOpen,
+  Webhook,
+  Activity,
   Shield,
   Zap,
+  ExternalLink,
   RefreshCw,
+  TrendingUp,
 } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import GlassCard from '@/components/ui/GlassCard';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import type { LucideProps } from 'lucide-react';
 
-interface ThirdPartyApp {
-  id: string;
-  name: string;
-  description?: string;
-  clientId: string;
-  status: 'ACTIVE' | 'BLOCKED';
-  redirectUris: string[];
-  createdAt: string;
-  updatedAt: string;
-  clientSecret?: string; // Only shown once during creation
+type IconComponent = React.ComponentType<LucideProps>;
+
+// ==================== CHART DATA ====================
+
+const apiUsageData = [
+  { day: '06', calls: 1200 },
+  { day: '07', calls: 1800 },
+  { day: '08', calls: 1400 },
+  { day: '09', calls: 2200 },
+  { day: '10', calls: 1950 },
+  { day: '11', calls: 2800 },
+  { day: '12', calls: 2400 },
+  { day: '13', calls: 3100 },
+];
+
+// ==================== CHART TOOLTIP ====================
+
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload) return null;
+  return (
+    <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg px-3 py-2 shadow-xl">
+      <div className="text-[10px] text-white/40 mb-1">Feb {label}</div>
+      <div className="text-sm font-bold text-white">{payload[0]?.value?.toLocaleString()} calls</div>
+    </div>
+  );
 }
 
-interface CreateAppForm {
+// ==================== API KEY CARD ====================
+
+function ApiKeyCard({
+  name,
+  keyValue,
+  created,
+  lastUsed,
+  calls,
+  status,
+}: {
   name: string;
-  description: string;
-  redirectUris: string[];
+  keyValue: string;
+  created: string;
+  lastUsed: string;
+  calls: string;
+  status: 'active' | 'expired';
+}) {
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <div className="p-5 rounded-xl bg-white/2 border border-white/5 hover:border-white/10 transition-all">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+            <Key className="w-5 h-5 text-white/50" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-white">{name}</div>
+            <div className="text-[10px] text-white/30">Created {created}</div>
+          </div>
+        </div>
+        <Badge variant={status === 'active' ? 'success' : 'danger'}>{status}</Badge>
+      </div>
+
+      {/* Key Value */}
+      <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/5 mb-4">
+        <code className="flex-1 text-xs font-mono text-white/50 truncate">
+          {revealed ? keyValue : keyValue.slice(0, 8) + '••••••••••••••••••••••••'}
+        </code>
+        <button
+          onClick={() => setRevealed(!revealed)}
+          className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
+        >
+          {revealed ? <EyeOff className="w-3.5 h-3.5 text-white/30" /> : <Eye className="w-3.5 h-3.5 text-white/30" />}
+        </button>
+        <button className="p-1.5 rounded-md hover:bg-white/5 transition-colors">
+          <Copy className="w-3.5 h-3.5 text-white/30" />
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center gap-6 text-xs text-white/30">
+        <div className="flex items-center gap-1.5">
+          <Clock className="w-3 h-3" />
+          Last used: {lastUsed}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Activity className="w-3 h-3" />
+          {calls} calls
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+        <Button variant="ghost" size="sm">
+          <RefreshCw className="w-3.5 h-3.5" />
+          Rotate
+        </Button>
+        <Button variant="danger" size="sm">
+          <Trash2 className="w-3.5 h-3.5" />
+          Revoke
+        </Button>
+      </div>
+    </div>
+  );
 }
+
+// ==================== CODE SNIPPET ====================
+
+function CodeSnippet() {
+  const code = `// Fetch user's vault data with scoped token
+const response = await fetch('https://api.datavault.io/v1/vault', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer dv_sk_live_...',
+    'X-Scope': 'name,email',
+    'X-Token-TTL': '3600'
+  }
+});
+
+const data = await response.json();
+// { name: "Wassim", email: "wassim@..." }`;
+
+  return (
+    <GlassCard className="p-6" hover={false}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <Terminal className="w-4 h-4 text-emerald-400" />
+          </div>
+          <h3 className="text-sm font-semibold text-white">Quick Start</h3>
+        </div>
+        <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+          <Copy className="w-3.5 h-3.5 text-white/40" />
+        </button>
+      </div>
+      <pre className="p-4 rounded-lg bg-black/50 border border-white/5 overflow-x-auto">
+        <code className="text-xs font-mono text-white/60 leading-relaxed whitespace-pre">{code}</code>
+      </pre>
+    </GlassCard>
+  );
+}
+
+// ==================== WEBHOOK CONFIG ====================
+
+function WebhooksSection() {
+  const webhooks = [
+    { url: 'https://myapp.com/webhook/vault', events: ['token.created', 'token.revoked'], status: 'active' as const },
+    { url: 'https://myapp.com/webhook/access', events: ['data.accessed'], status: 'active' as const },
+    { url: 'https://staging.myapp.com/hook', events: ['*'], status: 'inactive' as const },
+  ];
+
+  return (
+    <GlassCard className="p-6" hover={false}>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+            <Webhook className="w-4 h-4 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Webhooks</h3>
+            <p className="text-[10px] text-white/30">Receive real-time event notifications</p>
+          </div>
+        </div>
+        <Button variant="secondary" size="sm">
+          <Plus className="w-3.5 h-3.5" />
+          Add
+        </Button>
+      </div>
+      <div className="space-y-3">
+        {webhooks.map((hook, i) => (
+          <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/2 border border-white/5">
+            <div className="flex-1 min-w-0">
+              <code className="text-xs font-mono text-white/60 truncate block">{hook.url}</code>
+              <div className="flex items-center gap-2 mt-1">
+                {hook.events.map((event) => (
+                  <span key={event} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 font-mono">
+                    {event}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Badge variant={hook.status === 'active' ? 'success' : 'default'}>{hook.status}</Badge>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+// ==================== DOC LINKS ====================
+
+function DocLinks() {
+  const docs = [
+    { icon: BookOpen, title: 'Getting Started', desc: 'Quick start guide and authentication', color: 'bg-blue-500/10 text-blue-400' },
+    { icon: Code2, title: 'API Reference', desc: 'Full REST API documentation', color: 'bg-indigo-500/10 text-indigo-400' },
+    { icon: Key, title: 'Authentication', desc: 'Token scoping, TTL, and permissions', color: 'bg-emerald-500/10 text-emerald-400' },
+    { icon: Shield, title: 'Security', desc: 'Encryption, zero-knowledge architecture', color: 'bg-purple-500/10 text-purple-400' },
+  ];
+
+  return (
+    <GlassCard className="p-6" hover={false}>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold text-white">Documentation</h3>
+        <button className="text-xs text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors">
+          View all <ExternalLink className="w-3 h-3" />
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {docs.map((doc) => {
+          const Icon = doc.icon;
+          return (
+            <motion.button
+              key={doc.title}
+              className="flex items-start gap-3 p-4 rounded-xl bg-white/2 border border-white/5 hover:bg-white/4 hover:border-white/10 transition-all text-left group"
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', doc.color)}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-white group-hover:text-white/90">{doc.title}</div>
+                <div className="text-[10px] text-white/30">{doc.desc}</div>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </GlassCard>
+  );
+}
+
+// ==================== STAT CARD ====================
+
+function StatCard({
+  label,
+  value,
+  change,
+  icon: Icon,
+  trend,
+}: {
+  label: string;
+  value: string;
+  change?: string;
+  icon: IconComponent;
+  trend?: 'up' | 'down';
+}) {
+  return (
+    <GlassCard className="p-5" hover={false}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-white/60" />
+        </div>
+        {change && (
+          <span
+            className={cn(
+              'text-xs font-medium px-2 py-1 rounded-lg flex items-center gap-1',
+              trend === 'up' ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
+            )}
+          >
+            <TrendingUp className={cn('w-3 h-3', trend === 'down' && 'rotate-180')} />
+            {change}
+          </span>
+        )}
+      </div>
+      <div className="text-2xl font-bold text-white mb-1">{value}</div>
+      <div className="text-xs text-white/40">{label}</div>
+    </GlassCard>
+  );
+}
+
+// ==================== MAIN DEVELOPER PORTAL ====================
 
 export default function DeveloperPortal() {
-  const [apps, setApps] = useState<ThirdPartyApp[]>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
-  const [createForm, setCreateForm] = useState<CreateAppForm>({
-    name: '',
-    description: '',
-    redirectUris: [''],
-  });
-
-  // Fetch apps on component mount
-  useEffect(() => {
-    fetchApps();
-  }, []);
-
-  const fetchApps = async () => {
-    try {
-      const token = localStorage.getItem('token') || '';
-      const response = await fetch('/api/third-party-apps', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setApps(data.data || []);
-      }
-    } catch {
-      alert('Failed to fetch apps');
-    }
-  };
-
-  const createApp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const response = await fetch('/api/third-party-apps', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          ...createForm,
-          redirectUris: createForm.redirectUris.filter(uri => uri.trim()),
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        // Add the new app with the clientSecret (only shown once)
-        setApps([data.data, ...apps]);
-        setShowCreateForm(false);
-        setCreateForm({ name: '', description: '', redirectUris: [''] });
-      } else {
-        alert(data.message || 'Failed to create app');
-      }
-    } catch {
-      alert('Failed to create app');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const rotateSecret = async (appId: string) => {
-    if (!confirm('Are you sure you want to rotate the client secret? This will invalidate the current secret.')) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token') || '';
-      const response = await fetch(`/api/third-party-apps/${appId}/rotate-secret`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        // Update the app with new secret
-        setApps(apps.map(app => 
-          app.id === appId ? { ...data.data, clientSecret: data.data.clientSecret } : app
-        ));
-        alert('Client secret rotated successfully! Save the new secret securely.');
-      } else {
-        alert(data.message || 'Failed to rotate secret');
-      }
-    } catch {
-      alert('Failed to rotate secret');
-    }
-  };
-
-  const changeStatus = async (appId: string, status: 'ACTIVE' | 'BLOCKED') => {
-    if (!confirm(`Are you sure you want to ${status.toLowerCase()} this app?`)) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token') || '';
-      const response = await fetch(`/api/third-party-apps/${appId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setApps(apps.map(app => 
-          app.id === appId ? { ...app, status: data.data.status } : app
-        ));
-      } else {
-        alert(data.message || 'Failed to change status');
-      }
-    } catch {
-      alert('Failed to change status');
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // Could add toast notification here
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
-  };
-
-  const toggleSecretVisibility = (appId: string) => {
-    setRevealedSecrets(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(appId)) {
-        newSet.delete(appId);
-      } else {
-        newSet.add(appId);
-      }
-      return newSet;
-    });
-  };
-
-  const addRedirectUri = () => {
-    setCreateForm(prev => ({
-      ...prev,
-      redirectUris: [...prev.redirectUris, ''],
-    }));
-  };
-
-  const updateRedirectUri = (index: number, value: string) => {
-    setCreateForm(prev => ({
-      ...prev,
-      redirectUris: prev.redirectUris.map((uri, i) => i === index ? value : uri),
-    }));
-  };
-
-  const removeRedirectUri = (index: number) => {
-    setCreateForm(prev => ({
-      ...prev,
-      redirectUris: prev.redirectUris.filter((_, i) => i !== index),
-    }));
-  };
-
   return (
     <DashboardLayout>
       {/* Header */}
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-bold mb-1">Developer Portal</h1>
-          <p className="text-sm text-white/40">Manage your third-party applications and API credentials.</p>
+          <p className="text-sm text-white/40">Manage API keys, monitor usage, and integrate with DataVault.</p>
         </motion.div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Key} label="Applications" value={apps.length.toString()} />
-        <StatCard icon={Zap} label="Active Apps" value={apps.filter(app => app.status === 'ACTIVE').length.toString()} />
-        <StatCard icon={Shield} label="Total API Calls" value="0" />
-        <StatCard icon={Check} label="Success Rate" value="100%" />
+        <StatCard icon={Key} label="API Keys" value="3" />
+        <StatCard icon={Zap} label="Total Calls (24h)" value="3,142" change="+18%" trend="up" />
+        <StatCard icon={Clock} label="Avg Response" value="48ms" change="-12%" trend="up" />
+        <StatCard icon={Check} label="Success Rate" value="99.8%" />
       </div>
 
-      {/* Create App Button */}
+      {/* API Usage Chart */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <GlassCard className="p-6" hover={false}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-sm font-semibold text-white">API Usage</h3>
+                <p className="text-[10px] text-white/30">Last 8 days</p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/30">
+                <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                API Calls
+              </div>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={apiUsageData}>
+                  <defs>
+                    <linearGradient id="apiGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="3 3" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.3)' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.3)' }} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="calls" stroke="#06b6d4" strokeWidth={2} fill="url(#apiGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Quick Start Code */}
+        <CodeSnippet />
+      </div>
+
+      {/* API Keys */}
       <div className="mb-6">
-        <Button 
-          variant="primary" 
-          onClick={() => setShowCreateForm(true)}
-          className="mb-4"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Create New Application
-        </Button>
-      </div>
-
-      {/* Create App Form */}
-      {showCreateForm && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10"
-        >
-          <h2 className="text-lg font-semibold text-white mb-4">Create New Application</h2>
-          <form onSubmit={createApp} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Application Name</label>
-              <input
-                type="text"
-                required
-                value={createForm.name}
-                onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
-                placeholder="My Application"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Description (Optional)</label>
-              <textarea
-                value={createForm.description}
-                onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20 resize-none"
-                rows={3}
-                placeholder="Describe your application..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Redirect URIs</label>
-              {createForm.redirectUris.map((uri, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="url"
-                    required={index === 0}
-                    value={uri}
-                    onChange={(e) => updateRedirectUri(index, e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
-                    placeholder="https://yourapp.com/callback"
-                  />
-                  {createForm.redirectUris.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      onClick={() => removeRedirectUri(index)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={addRedirectUri}
-                className="mt-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add Redirect URI
-              </Button>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" loading={loading} variant="primary">
-                Create Application
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowCreateForm(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </motion.div>
-      )}
-
-      {/* Applications List */}
-      <div className="space-y-4">
-        {apps.map((app) => (
-          <motion.div
-            key={app.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-xl bg-white/2 border border-white/5 hover:border-white/10 transition-all"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Key className="w-5 h-5 text-white/50" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">{app.name}</div>
-                  <div className="text-[10px] text-white/30">Created {new Date(app.createdAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-              <div className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium',
-                app.status === 'ACTIVE' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-red-500/10 text-red-400 border border-red-500/20'
-              )}>
-                {app.status}
-              </div>
-            </div>
-
-            {/* Client ID */}
-            <div className="mb-4">
-              <label className="text-xs text-white/40 mb-1 block">Client ID</label>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/5">
-                <code className="flex-1 text-xs font-mono text-white/50 truncate">
-                  {app.clientId}
-                </code>
-                <button
-                  onClick={() => copyToClipboard(app.clientId)}
-                  className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
-                >
-                  <Copy className="w-3.5 h-3.5 text-white/30" />
-                </button>
-              </div>
-            </div>
-
-            {/* Client Secret (only shown once) */}
-            {app.clientSecret && (
-              <div className="mb-4">
-                <label className="text-xs text-white/40 mb-1 block">Client Secret (Save this securely!)</label>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/5">
-                  <code className="flex-1 text-xs font-mono text-white/50 truncate">
-                    {revealedSecrets.has(app.id) ? (app.clientSecret || '') : (app.clientSecret || '').slice(0, 8) + '••••••••••••••••••••••'}
-                  </code>
-                  <button
-                    onClick={() => toggleSecretVisibility(app.id)}
-                    className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
-                  >
-                    {revealedSecrets.has(app.id) ? 
-                      <EyeOff className="w-3.5 h-3.5 text-white/30" /> : 
-                      <Eye className="w-3.5 h-3.5 text-white/30" />
-                    }
-                  </button>
-                  <button
-                    onClick={() => copyToClipboard(app.clientSecret || '')}
-                    className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-white/30" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-4 border-t border-white/5">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => rotateSecret(app.id)}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Rotate Secret
-              </Button>
-              <Button 
-                variant={app.status === 'ACTIVE' ? 'danger' : 'primary'}
-                size="sm"
-                onClick={() => changeStatus(app.id, app.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE')}
-              >
-                {app.status === 'ACTIVE' ? <Trash2 className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
-                {app.status === 'ACTIVE' ? 'Block' : 'Activate'}
-              </Button>
-            </div>
-          </motion.div>
-        ))}
-
-        {apps.length === 0 && !showCreateForm && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-              <Key className="w-8 h-8 text-white/30" />
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-2">No applications yet</h3>
-            <p className="text-sm text-white/40 mb-4">Create your first third-party application to get started.</p>
-            <Button variant="primary" onClick={() => setShowCreateForm(true)}>
-              <Plus className="w-3.5 h-3.5" />
-              Create Application
-            </Button>
-          </div>
-        )}
-      </div>
-    </DashboardLayout>
-  );
-}
-
-// Helper component for stats
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="p-5 rounded-xl bg-white/2 border border-white/5">
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-white/60" />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white">API Keys</h2>
+          <Button variant="primary" size="sm">
+            <Plus className="w-3.5 h-3.5" />
+            Create Key
+          </Button>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <ApiKeyCard
+            name="Production Key"
+            keyValue="dv_sk_live_a8f72c9e4b1d6f3a2e8c7d5b9f0a1e3d4c6b8a2f7e9d1c5b3a8f4"
+            created="Jan 15, 2026"
+            lastUsed="2 min ago"
+            calls="28.4K"
+            status="active"
+          />
+          <ApiKeyCard
+            name="Staging Key"
+            keyValue="dv_sk_test_7b3e9a1f4d8c2e6a0f5b8d3c7e1a9f4b2d6c8a0e3f5b7d1c9a2e8"
+            created="Jan 20, 2026"
+            lastUsed="1 hour ago"
+            calls="4.2K"
+            status="active"
+          />
+          <ApiKeyCard
+            name="Legacy Key"
+            keyValue="dv_sk_live_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7"
+            created="Dec 10, 2025"
+            lastUsed="30 days ago"
+            calls="156"
+            status="expired"
+          />
         </div>
       </div>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-xs text-white/40">{label}</div>
-    </div>
+
+      {/* Bottom Grid */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <WebhooksSection />
+        <DocLinks />
+      </div>
+    </DashboardLayout>
   );
 }
