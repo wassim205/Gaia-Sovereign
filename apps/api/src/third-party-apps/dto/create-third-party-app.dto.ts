@@ -1,4 +1,5 @@
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsValidRedirectUriArray } from '../decorators/is-valid-redirect-uri.decorator';
 
 export class CreateThirdPartyAppDto {
   @IsString()
@@ -11,5 +12,6 @@ export class CreateThirdPartyAppDto {
 
   @IsArray()
   @IsString({ each: true })
+  @IsValidRedirectUriArray()
   redirectUris!: string[];
 }

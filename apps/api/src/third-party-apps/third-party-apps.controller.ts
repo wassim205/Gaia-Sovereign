@@ -13,6 +13,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { CurrentUserData } from 'src/auth/decorators/current-user.decorator';
 import { ThirdPartyAppsService } from './third-party-apps.service';
+import { AppOwnerOrAdminGuard } from './guards/app-owner-or-admin.guard';
 import { CreateThirdPartyAppDto } from './dto/create-third-party-app.dto';
 import { UpdateThirdPartyAppDto } from './dto/update-third-party-app.dto';
 
@@ -51,6 +52,7 @@ export class ThirdPartyAppsController {
 
   @Patch(':id/rotate-secret')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AppOwnerOrAdminGuard)
   async rotateSecret(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
@@ -71,6 +73,7 @@ export class ThirdPartyAppsController {
 
   @Patch(':id/status')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AppOwnerOrAdminGuard)
   async changeStatus(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
@@ -86,6 +89,7 @@ export class ThirdPartyAppsController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AppOwnerOrAdminGuard)
   async update(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,

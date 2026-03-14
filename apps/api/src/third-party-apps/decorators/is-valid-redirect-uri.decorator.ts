@@ -41,14 +41,44 @@ export class IsValidRedirectUriConstraint
   }
 }
 
+@ValidatorConstraint({ async: false })
+export class IsValidRedirectUriArrayConstraint
+  implements ValidatorConstraintInterface
+{
+  validate(uris: string[], args: ValidationArguments) {
+    if (!Array.isArray(uris)) {
+      return false;
+    }
+
+    const constraint = new IsValidRedirectUriConstraint();
+    return uris.every(uri => constraint.validate(uri, args));
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return 'All redirect URIs must be valid HTTPS URLs (or http://localhost in dev) and must not contain query strings or fragments.';
+  }
+}
+
 export function IsValidRedirectUri(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions,
       constraints: [],
       validator: IsValidRedirectUriConstraint,
+    });
+  };
+}
+
+export function IsValidRedirectUriArray(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      constraints: [],
+      validator: IsValidRedirectUriArrayConstraint,
     });
   };
 }
