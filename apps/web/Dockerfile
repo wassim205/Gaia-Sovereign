@@ -10,8 +10,14 @@ WORKDIR /app
 RUN npm config set registry https://registry.npmjs.org/ && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retry-factor 2 && \
-    npm config set fetch-retry-maxattempts 5
+    npm config set fetch-retry-factor 2
+
+# Configure pnpm for better reliability
+RUN pnpm config set registry https://registry.npmjs.org/ && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
+    pnpm config set fetch-retry-factor 2 && \
+    pnpm config set fetch-timeout 600000
 
 # Copy workspace files from parent directory
 COPY ../package.json ../pnpm-lock.yaml ../pnpm-workspace.yaml* ./
@@ -20,11 +26,11 @@ COPY ../package.json ../pnpm-lock.yaml ../pnpm-workspace.yaml* ./
 COPY package.json ./
 
 # Install dependencies with retry logic
-RUN pnpm install --network-timeout 600000 || \
+RUN pnpm install --fetch-timeout 600000 || \
     (echo "First attempt failed, retrying..." && \
-     pnpm install --network-timeout 600000 --prefer-offline) || \
+     pnpm install --fetch-timeout 600000 --prefer-offline) || \
     (echo "Second attempt failed, final retry..." && \
-     pnpm install --network-timeout 600000 --prefer-offline --no-frozen-lockfile)
+     pnpm install --fetch-timeout 600000 --prefer-offline)
 
 # Copy source code
 COPY . .
@@ -45,9 +51,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./
 
 # Install production dependencies only with retry logic
-RUN pnpm install --prod --network-timeout 300000 || \
+RUN pnpm install --prod --fetch-timeout 300000 || \
     (echo "Production install failed, retrying..." && \
-     pnpm install --prod --network-timeout 300000 --prefer-offline)
+     pnpm install --prod --fetch-timeout 300000 --prefer-offline)
 
 EXPOSE 3000
 CMD ["pnpm", "start"]
