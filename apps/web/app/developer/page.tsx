@@ -108,6 +108,16 @@ class ApiService {
     });
   }
 
+  async updateApp(
+    id: string,
+    data: CreateAppForm,
+  ): Promise<{ data: ThirdPartyApp }> {
+    return this.request(`/api/third-party-apps/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   async changeStatus(id: string, status: 'ACTIVE' | 'BLOCKED'): Promise<{ data: ThirdPartyApp }> {
     return this.request(`/api/third-party-apps/${id}/status`, {
       method: 'PATCH',
@@ -151,10 +161,12 @@ function ApiKeyCard({
   app,
   onRotateSecret,
   onChangeStatus,
+  onEdit,
 }: {
   app: ThirdPartyApp & { clientSecret?: string };
   onRotateSecret: (id: string) => void;
   onChangeStatus: (id: string, status: 'ACTIVE' | 'BLOCKED') => void;
+  onEdit: (app: ThirdPartyApp) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -243,6 +255,14 @@ function ApiKeyCard({
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onEdit(app)}
+        >
+          <Code2 className="w-3.5 h-3.5" />
+          Edit
+        </Button>
         <Button 
           variant="ghost" 
           size="sm"
@@ -515,6 +535,176 @@ function SecretDisplayModal({
   );
 }
 
+// ==================== EDIT APP MODAL ====================
+
+function EditAppModal({
+  app,
+  onClose,
+  onUpdate,
+}: {
+  app: ThirdPartyApp;
+  onClose: () => void;
+  onUpdate: (data: CreateAppForm) => Promise<void>;
+}) {
+  const [formData, setFormData] = useState<CreateAppForm>({
+    name: app.name,
+    description: app.description || '',
+    redirectUris: app.redirectUris.length > 0 ? app.redirectUris : [''],
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const validUris = formData.redirectUris.filter((uri) => uri.trim());
+      await onUpdate({
+        ...formData,
+        redirectUris: validUris,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update app');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addRedirectUri = () => {
+    setFormData((prev) => ({
+      ...prev,
+      redirectUris: [...prev.redirectUris, ''],
+    }));
+  };
+
+  const removeRedirectUri = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      redirectUris: prev.redirectUris.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateRedirectUri = (index: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      redirectUris: prev.redirectUris.map((uri, i) => (i === index ? value : uri)),
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md mx-4"
+      >
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-white">Edit App</h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-400">{error}</span>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                App Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
+                placeholder="My Application"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20 resize-none"
+                placeholder="Describe your application..."
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Redirect URIs *
+              </label>
+              {formData.redirectUris.map((uri, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    required={index === 0}
+                    value={uri}
+                    onChange={(e) => updateRedirectUri(index, e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
+                    placeholder="https://yourapp.com/callback"
+                  />
+                  {formData.redirectUris.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRedirectUri(index)}
+                      className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addRedirectUri}
+                className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 transition-colors text-sm"
+              >
+                + Add Redirect URI
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" loading={loading} className="flex-1">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </GlassCard>
+      </motion.div>
+    </div>
+  );
+}
+
 // ==================== CODE SNIPPET ====================
 
 function CodeSnippet() {
@@ -687,6 +877,7 @@ export default function DeveloperPortal() {
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newClientSecret, setNewClientSecret] = useState<string | null>(null);
+  const [editingApp, setEditingApp] = useState<ThirdPartyApp | null>(null);
 
   // Load apps on mount
   useEffect(() => {
@@ -742,6 +933,24 @@ export default function DeveloperPortal() {
       ));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to change status');
+    }
+  };
+
+  const handleEditApp = (app: ThirdPartyApp) => {
+    setEditingApp(app);
+  };
+
+  const handleUpdateApp = async (data: CreateAppForm) => {
+    if (!editingApp) return;
+
+    try {
+      const response = await apiService.updateApp(editingApp.id, data);
+      setApps(prev => prev.map(app => 
+        app.id === editingApp.id ? response.data : app
+      ));
+      setEditingApp(null);
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -850,6 +1059,7 @@ export default function DeveloperPortal() {
                 app={app}
                 onRotateSecret={handleRotateSecret}
                 onChangeStatus={handleChangeStatus}
+                onEdit={handleEditApp}
               />
             ))}
           </div>
@@ -873,6 +1083,14 @@ export default function DeveloperPortal() {
         <SecretDisplayModal
           clientSecret={newClientSecret}
           onClose={() => setNewClientSecret(null)}
+        />
+      )}
+
+      {editingApp && (
+        <EditAppModal
+          app={editingApp}
+          onClose={() => setEditingApp(null)}
+          onUpdate={handleUpdateApp}
         />
       )}
     </DashboardLayout>
