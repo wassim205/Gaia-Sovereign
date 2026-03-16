@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Key,
@@ -15,12 +15,14 @@ import {
   Terminal,
   BookOpen,
   Webhook,
-  Activity,
   Shield,
   Zap,
   ExternalLink,
   RefreshCw,
   TrendingUp,
+  X,
+  AlertCircle,
+  CheckCircle,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -40,18 +42,96 @@ import type { LucideProps } from 'lucide-react';
 
 type IconComponent = React.ComponentType<LucideProps>;
 
+// ==================== TYPES ====================
+
+interface ThirdPartyApp {
+  id: string;
+  name: string;
+  description?: string;
+  clientId: string;
+  status: 'ACTIVE' | 'BLOCKED';
+  redirectUris: string[];
+  createdAt: string;
+  updatedAt: string;
+  clientSecret?: string; // Only returned once on creation/rotation
+}
+
+interface CreateAppForm {
+  name: string;
+  description: string;
+  redirectUris: string[];
+}
+
+// ==================== API SERVICE ====================
+
+class ApiService {
+  private baseUrl: string;
+  private token: string;
+
+  constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+    this.token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.token}`,
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getApps(): Promise<{ data: ThirdPartyApp[] }> {
+    return this.request('/third-party-apps');
+  }
+
+  async createApp(data: CreateAppForm): Promise<{ data: ThirdPartyApp & { clientSecret: string } }> {
+    return this.request('/third-party-apps', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async rotateSecret(id: string): Promise<{ data: ThirdPartyApp & { clientSecret: string } }> {
+    return this.request(`/third-party-apps/${id}/rotate-secret`, {
+      method: 'PATCH',
+    });
+  }
+
+  async changeStatus(id: string, status: 'ACTIVE' | 'BLOCKED'): Promise<{ data: ThirdPartyApp }> {
+    return this.request(`/third-party-apps/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+}
+
+const apiService = new ApiService();
+
 // ==================== CHART DATA ====================
 
-const apiUsageData = [
-  { day: '06', calls: 1200 },
-  { day: '07', calls: 1800 },
-  { day: '08', calls: 1400 },
-  { day: '09', calls: 2200 },
-  { day: '10', calls: 1950 },
-  { day: '11', calls: 2800 },
-  { day: '12', calls: 2400 },
-  { day: '13', calls: 3100 },
+const generateMockData = () => [
+  { day: '06', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '07', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '08', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '09', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '10', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '11', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '12', calls: Math.floor(Math.random() * 2000) + 1000 },
+  { day: '13', calls: Math.floor(Math.random() * 2000) + 1000 },
 ];
+
+const apiUsageData = generateMockData();
 
 // ==================== CHART TOOLTIP ====================
 
@@ -68,21 +148,38 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ==================== API KEY CARD ====================
 
 function ApiKeyCard({
-  name,
-  keyValue,
-  created,
-  lastUsed,
-  calls,
-  status,
+  app,
+  onRotateSecret,
+  onChangeStatus,
 }: {
-  name: string;
-  keyValue: string;
-  created: string;
-  lastUsed: string;
-  calls: string;
-  status: 'active' | 'expired';
+  app: ThirdPartyApp & { clientSecret?: string };
+  onRotateSecret: (id: string) => void;
+  onChangeStatus: (id: string, status: 'ACTIVE' | 'BLOCKED') => void;
 }) {
   const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getStatusVariant = (status: string) => {
+    return status === 'ACTIVE' ? 'success' : 'danger';
+  };
 
   return (
     <div className="p-5 rounded-xl bg-white/2 border border-white/5 hover:border-white/10 transition-all">
@@ -92,52 +189,328 @@ function ApiKeyCard({
             <Key className="w-5 h-5 text-white/50" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-white">{name}</div>
-            <div className="text-[10px] text-white/30">Created {created}</div>
+            <div className="text-sm font-semibold text-white">{app.name}</div>
+            <div className="text-[10px] text-white/30">Created {formatDate(app.createdAt)}</div>
           </div>
         </div>
-        <Badge variant={status === 'active' ? 'success' : 'danger'}>{status}</Badge>
+        <Badge variant={getStatusVariant(app.status)}>{app.status}</Badge>
       </div>
 
-      {/* Key Value */}
+      {/* Client ID */}
       <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/5 mb-4">
         <code className="flex-1 text-xs font-mono text-white/50 truncate">
-          {revealed ? keyValue : keyValue.slice(0, 8) + '••••••••••••••••••••••••'}
+          {revealed && app.clientSecret ? app.clientSecret : app.clientId}
         </code>
-        <button
-          onClick={() => setRevealed(!revealed)}
+        {app.clientSecret && (
+          <button
+            onClick={() => setRevealed(!revealed)}
+            className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
+          >
+            {revealed ? <EyeOff className="w-3.5 h-3.5 text-white/30" /> : <Eye className="w-3.5 h-3.5 text-white/30" />}
+          </button>
+        )}
+        <button 
+          onClick={() => handleCopy(app.clientSecret || app.clientId)}
           className="p-1.5 rounded-md hover:bg-white/5 transition-colors"
         >
-          {revealed ? <EyeOff className="w-3.5 h-3.5 text-white/30" /> : <Eye className="w-3.5 h-3.5 text-white/30" />}
-        </button>
-        <button className="p-1.5 rounded-md hover:bg-white/5 transition-colors">
-          <Copy className="w-3.5 h-3.5 text-white/30" />
+          {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-white/30" />}
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center gap-6 text-xs text-white/30">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3 h-3" />
-          Last used: {lastUsed}
+      {/* App Info */}
+      {app.description && (
+        <div className="mb-3">
+          <p className="text-xs text-white/40">{app.description}</p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Activity className="w-3 h-3" />
-          {calls} calls
+      )}
+
+      {/* Redirect URIs */}
+      {app.redirectUris.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[10px] text-white/30 mb-1">Redirect URIs:</div>
+          {app.redirectUris.slice(0, 2).map((uri, index) => (
+            <code key={index} className="block text-xs font-mono text-white/20 truncate mb-1">
+              {uri}
+            </code>
+          ))}
+          {app.redirectUris.length > 2 && (
+            <div className="text-[10px] text-white/20">
+              +{app.redirectUris.length - 2} more
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-        <Button variant="ghost" size="sm">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onRotateSecret(app.id)}
+        >
           <RefreshCw className="w-3.5 h-3.5" />
           Rotate
         </Button>
-        <Button variant="danger" size="sm">
-          <Trash2 className="w-3.5 h-3.5" />
-          Revoke
+        <Button 
+          variant={app.status === 'ACTIVE' ? 'danger' : 'primary'} 
+          size="sm"
+          onClick={() => onChangeStatus(app.id, app.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE')}
+        >
+          {app.status === 'ACTIVE' ? <Trash2 className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+          {app.status === 'ACTIVE' ? 'Block' : 'Activate'}
         </Button>
       </div>
+    </div>
+  );
+}
+
+// ==================== CREATE APP MODAL ====================
+
+function CreateAppModal({ 
+  isOpen, 
+  onClose, 
+  onCreate 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (data: CreateAppForm) => Promise<void>;
+}) {
+  const [formData, setFormData] = useState<CreateAppForm>({
+    name: '',
+    description: '',
+    redirectUris: ['']
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const validUris = formData.redirectUris.filter(uri => uri.trim());
+      await onCreate({
+        ...formData,
+        redirectUris: validUris
+      });
+      setFormData({ name: '', description: '', redirectUris: [''] });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create app');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addRedirectUri = () => {
+    setFormData(prev => ({
+      ...prev,
+      redirectUris: [...prev.redirectUris, '']
+    }));
+  };
+
+  const removeRedirectUri = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      redirectUris: prev.redirectUris.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateRedirectUri = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      redirectUris: prev.redirectUris.map((uri, i) => i === index ? value : uri)
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md mx-4"
+      >
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-white">Create New App</h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-400">{error}</span>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                App Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
+                placeholder="My Application"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20 resize-none"
+                placeholder="Describe your application..."
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Redirect URIs *
+              </label>
+              {formData.redirectUris.map((uri, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    required={index === 0}
+                    value={uri}
+                    onChange={(e) => updateRedirectUri(index, e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
+                    placeholder="https://yourapp.com/callback"
+                  />
+                  {formData.redirectUris.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRedirectUri(index)}
+                      className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addRedirectUri}
+                className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 transition-colors text-sm"
+              >
+                + Add Redirect URI
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={loading}
+                className="flex-1"
+              >
+                Create App
+              </Button>
+            </div>
+          </form>
+        </GlassCard>
+      </motion.div>
+    </div>
+  );
+}
+
+// ==================== SECRET DISPLAY MODAL ====================
+
+function SecretDisplayModal({ 
+  clientSecret, 
+  onClose 
+}: {
+  clientSecret: string;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(clientSecret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md mx-4"
+      >
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-white">Client Secret Generated</h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-3">
+              <AlertCircle className="w-4 h-4 text-yellow-400 shrink-0" />
+              <p className="text-sm text-yellow-400">
+                Save this secret securely. It won&apos;t be shown again.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-black/40 border border-white/5">
+              <code className="text-xs font-mono text-white break-all">{clientSecret}</code>
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={handleCopy}
+            className="w-full"
+          >
+            {copied ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Secret
+              </>
+            )}
+          </Button>
+        </GlassCard>
+      </motion.div>
     </div>
   );
 }
@@ -309,6 +682,73 @@ function StatCard({
 // ==================== MAIN DEVELOPER PORTAL ====================
 
 export default function DeveloperPortal() {
+  const [apps, setApps] = useState<ThirdPartyApp[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newClientSecret, setNewClientSecret] = useState<string | null>(null);
+
+  // Load apps on mount
+  useEffect(() => {
+    loadApps();
+  }, []);
+
+  const loadApps = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getApps();
+      setApps(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load apps');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateApp = async (data: CreateAppForm) => {
+    try {
+      const response = await apiService.createApp(data);
+      // Add the new app with its secret
+      setApps(prev => [response.data, ...prev]);
+      // Show the secret modal
+      setNewClientSecret(response.data.clientSecret);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleRotateSecret = async (appId: string) => {
+    try {
+      const response = await apiService.rotateSecret(appId);
+      // Update the app with new secret
+      setApps(prev => prev.map(app => 
+        app.id === appId 
+          ? { ...response.data, clientSecret: response.data.clientSecret }
+          : app
+      ));
+      // Show the secret modal
+      setNewClientSecret(response.data.clientSecret);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to rotate secret');
+    }
+  };
+
+  const handleChangeStatus = async (appId: string, status: 'ACTIVE' | 'BLOCKED') => {
+    try {
+      const response = await apiService.changeStatus(appId, status);
+      // Update the app status
+      setApps(prev => prev.map(app => 
+        app.id === appId ? response.data : app
+      ));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to change status');
+    }
+  };
+
+  const totalCalls = Math.floor(Math.random() * 5000) + 1000; // Mock data for now
+  const avgResponse = Math.floor(Math.random() * 100) + 20; // Mock data for now
+  const successRate = 99.8; // Mock data for now
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -321,10 +761,10 @@ export default function DeveloperPortal() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Key} label="API Keys" value="3" />
-        <StatCard icon={Zap} label="Total Calls (24h)" value="3,142" change="+18%" trend="up" />
-        <StatCard icon={Clock} label="Avg Response" value="48ms" change="-12%" trend="up" />
-        <StatCard icon={Check} label="Success Rate" value="99.8%" />
+        <StatCard icon={Key} label="API Keys" value={apps.length.toString()} />
+        <StatCard icon={Zap} label="Total Calls (24h)" value={totalCalls.toLocaleString()} change="+18%" trend="up" />
+        <StatCard icon={Clock} label="Avg Response" value={`${avgResponse}ms`} change="-12%" trend="up" />
+        <StatCard icon={Check} label="Success Rate" value={`${successRate}%`} />
       </div>
 
       {/* API Usage Chart */}
@@ -369,37 +809,51 @@ export default function DeveloperPortal() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">API Keys</h2>
-          <Button variant="primary" size="sm">
+          <Button 
+            variant="primary" 
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+          >
             <Plus className="w-3.5 h-3.5" />
             Create Key
           </Button>
         </div>
-        <div className="grid lg:grid-cols-2 gap-4">
-          <ApiKeyCard
-            name="Production Key"
-            keyValue="dv_sk_live_a8f72c9e4b1d6f3a2e8c7d5b9f0a1e3d4c6b8a2f7e9d1c5b3a8f4"
-            created="Jan 15, 2026"
-            lastUsed="2 min ago"
-            calls="28.4K"
-            status="active"
-          />
-          <ApiKeyCard
-            name="Staging Key"
-            keyValue="dv_sk_test_7b3e9a1f4d8c2e6a0f5b8d3c7e1a9f4b2d6c8a0e3f5b7d1c9a2e8"
-            created="Jan 20, 2026"
-            lastUsed="1 hour ago"
-            calls="4.2K"
-            status="active"
-          />
-          <ApiKeyCard
-            name="Legacy Key"
-            keyValue="dv_sk_live_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7"
-            created="Dec 10, 2025"
-            lastUsed="30 days ago"
-            calls="156"
-            status="expired"
-          />
-        </div>
+        
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="text-white/40">Loading apps...</div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <div className="text-red-400">{error}</div>
+            <Button variant="ghost" size="sm" onClick={loadApps} className="mt-2">
+              Retry
+            </Button>
+          </div>
+        ) : apps.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-white/40 mb-4">No apps created yet</div>
+            <Button 
+              variant="primary" 
+              size="sm"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Your First App
+            </Button>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-4">
+            {apps.map((app) => (
+              <ApiKeyCard
+                key={app.id}
+                app={app}
+                onRotateSecret={handleRotateSecret}
+                onChangeStatus={handleChangeStatus}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Bottom Grid */}
@@ -407,6 +861,20 @@ export default function DeveloperPortal() {
         <WebhooksSection />
         <DocLinks />
       </div>
+
+      {/* Modals */}
+      <CreateAppModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={handleCreateApp}
+      />
+      
+      {newClientSecret && (
+        <SecretDisplayModal
+          clientSecret={newClientSecret}
+          onClose={() => setNewClientSecret(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
