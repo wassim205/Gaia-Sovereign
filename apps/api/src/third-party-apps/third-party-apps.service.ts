@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { randomBytes, createHash } from 'crypto';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { PasswordService } from 'src/auth/services/password.service';
 import { CreateThirdPartyAppDto } from './dto/create-third-party-app.dto';
 import { UpdateThirdPartyAppDto } from './dto/update-third-party-app.dto';
 
@@ -37,14 +42,12 @@ function generateClientSecret(): string {
   return `gss_${base64Url(randomBytes(48))}`;
 }
 
-function hashSecret(secret: string): string {
-  // Simple deterministic hash; later tasks can upgrade to argon2/bcrypt if desired.
-  return createHash('sha256').update(secret, 'utf8').digest('hex');
-}
-
 @Injectable()
 export class ThirdPartyAppsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private passwordService: PasswordService,
+  ) {}
 
   async create(
     ownerId: string,
@@ -52,7 +55,7 @@ export class ThirdPartyAppsService {
   ): Promise<{ app: ThirdPartyAppPublic; clientSecret: string }> {
     const clientId = generateClientId();
     const clientSecret = generateClientSecret();
-    const secretHash = hashSecret(clientSecret);
+    const secretHash = await this.passwordService.hashPassword(clientSecret);
 
     const app = await this.prisma.thirdPartyApp.create({
       data: {
@@ -109,11 +112,12 @@ export class ThirdPartyAppsService {
     });
 
     if (!existingApp) {
-      throw new Error('App not found or access denied');
+      throw new NotFoundException('App not found or access denied');
     }
 
     const newClientSecret = generateClientSecret();
-    const newSecretHash = hashSecret(newClientSecret);
+    const newSecretHash =
+      await this.passwordService.hashPassword(newClientSecret);
 
     const updatedApp = await this.prisma.thirdPartyApp.update({
       where: { id: appId },
@@ -150,7 +154,11 @@ export class ThirdPartyAppsService {
     });
 
     if (!existingApp) {
-      throw new Error('App not found or access denied');
+      throw new NotFoundException('App not found or access denied');
+    }
+
+    if (existingApp.ownerId !== ownerId) {
+      throw new ForbiddenException('App not found or access denied');
     }
 
     return this.prisma.thirdPartyApp.update({
@@ -180,7 +188,11 @@ export class ThirdPartyAppsService {
     });
 
     if (!existingApp) {
-      throw new Error('App not found or access denied');
+      throw new NotFoundException('App not found or access denied');
+    }
+
+    if (existingApp.ownerId !== ownerId) {
+      throw new ForbiddenException('App not found or access denied');
     }
 
     return this.prisma.thirdPartyApp.update({
