@@ -92,24 +92,24 @@ class ApiService {
   }
 
   async getApps(): Promise<{ data: ThirdPartyApp[] }> {
-    return this.request('/third-party-apps');
+    return this.request('/api/third-party-apps');
   }
 
   async createApp(data: CreateAppForm): Promise<{ data: ThirdPartyApp & { clientSecret: string } }> {
-    return this.request('/third-party-apps', {
+    return this.request('/api/third-party-apps', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async rotateSecret(id: string): Promise<{ data: ThirdPartyApp & { clientSecret: string } }> {
-    return this.request(`/third-party-apps/${id}/rotate-secret`, {
+    return this.request(`/api/third-party-apps/${id}/rotate-secret`, {
       method: 'PATCH',
     });
   }
 
   async changeStatus(id: string, status: 'ACTIVE' | 'BLOCKED'): Promise<{ data: ThirdPartyApp }> {
-    return this.request(`/third-party-apps/${id}/status`, {
+    return this.request(`/api/third-party-apps/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
