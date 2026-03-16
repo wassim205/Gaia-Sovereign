@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { CommonModule } from './common/common.module';
 import { VaultModule } from './vault/vault.module';
+import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { VaultModule } from './vault/vault.module';
     UsersModule,
     PrismaModule,
     VaultModule,
+    ThirdPartyAppsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
