@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -51,7 +51,7 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   'language': 'Your preferred language setting',
 };
 
-export default function ConsentPage() {
+function ConsentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const consentId = searchParams.get('id');
@@ -460,5 +460,28 @@ export default function ConsentPage() {
         </div>
       </div>
     </>
+  );
+}
+
+function ConsentLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-4"
+      >
+        <Loader className="w-12 h-12 animate-spin text-indigo-500" />
+        <p className="text-gray-400">Loading consent request...</p>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function ConsentPage() {
+  return (
+    <Suspense fallback={<ConsentLoadingFallback />}>
+      <ConsentPageContent />
+    </Suspense>
   );
 }
