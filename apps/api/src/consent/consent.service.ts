@@ -206,23 +206,35 @@ export class ConsentService {
       );
     }
 
-    const approvedFields = dto.approvedFields || consentRequest.requestedFields;
-
-    // Ensure all approved fields are in the requested fields
-    const invalidFields = approvedFields.filter(
-      (field) => !consentRequest.requestedFields.includes(field),
+    // Normalize approved fields
+    const normalizedApprovedFields = this.normalizeFields(
+      dto.approvedFields || consentRequest.requestedFields,
     );
+
+    // Validate that all approved fields are in the requested fields
+    const normalizedRequestedFields = this.normalizeFields(
+      consentRequest.requestedFields,
+    );
+    const invalidFields = normalizedApprovedFields.filter(
+      (field) => !normalizedRequestedFields.includes(field),
+    );
+
     if (invalidFields.length > 0) {
       throw new BadRequestException(
-        `Invalid fields: ${invalidFields.join(', ')}`,
+        `Invalid fields requested: ${invalidFields.join(', ')}. Only requested fields can be approved: ${normalizedRequestedFields.join(', ')}`,
       );
+    }
+
+    // Ensure at least one field is approved
+    if (normalizedApprovedFields.length === 0) {
+      throw new BadRequestException('At least one field must be approved');
     }
 
     const updated = await this.prisma.consentRequest.update({
       where: { id: consentId },
       data: {
         status: 'APPROVED',
-        requestedFields: approvedFields,
+        requestedFields: normalizedApprovedFields,
       },
       select: {
         id: true,

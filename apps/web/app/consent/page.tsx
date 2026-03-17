@@ -61,6 +61,7 @@ function ConsentPageContent() {
   const [approving, setApproving] = useState(false);
   const [denying, setDenying] = useState(false);
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<
     Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>
   >([]);
@@ -211,6 +212,20 @@ function ConsentPageContent() {
   };
 
   const toggleField = (field: string) => {
+    // Normalize field for comparison (lowercase, replace spaces with underscores)
+    const normalizedField = field.trim().toLowerCase();
+    const normalizedRequested = consent?.requestedFields.map(f => f.trim().toLowerCase()) || [];
+    
+    // Validate that field is in requested fields
+    if (!normalizedRequested.includes(normalizedField)) {
+      setValidationError(`Field "${field}" was not in the original request`);
+      setTimeout(() => setValidationError(null), 3000);
+      return;
+    }
+
+    // Clear error on successful toggle
+    setValidationError(null);
+
     const newSelected = new Set(selectedFields);
     if (newSelected.has(field)) {
       newSelected.delete(field);
@@ -365,6 +380,18 @@ function ConsentPageContent() {
                 <p className="text-gray-400 text-sm mb-4">
                   The application is requesting access to the following information
                 </p>
+
+                {validationError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-3"
+                  >
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-300">{validationError}</p>
+                  </motion.div>
+                )}
 
                 <div className="space-y-3">
                   {consent.requestedFields.map((field) => (
