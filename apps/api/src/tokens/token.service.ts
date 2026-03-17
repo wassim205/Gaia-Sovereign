@@ -67,34 +67,81 @@ export class TokenService {
 
   /**
    * Verify an access token and return its payload
+   * Checks: signature, expiry, database presence, revocation status
    */
   async verifyAccessToken(token: string): Promise<AccessTokenPayload> {
+    let payload: AccessTokenPayload;
+
+    // Step 1: Verify JWT signature and structure
     try {
-      const payload = this.jwtService.verify<AccessTokenPayload>(token);
-      
-      // Verify that token hasn't been revoked by checking token hash in database
-      const tokenHash = this.hashToken(token);
-      const storedToken = await this.prisma.accessToken.findUnique({
-        where: { tokenHash },
-      });
-
-      if (!storedToken) {
-        throw new Error('Token not found in database');
-      }
-
-      if (storedToken.revokedAt) {
-        throw new Error('Token has been revoked');
-      }
-
-      // Verify expiry
-      if (storedToken.expiresAt < new Date()) {
+      payload = this.jwtService.verify<AccessTokenPayload>(token);
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message.includes('jwt expired')) {
         throw new Error('Token has expired');
       }
-
-      return payload;
-    } catch (error) {
-      throw new Error(`Token verification failed: ${(error as Error).message}`);
+      if (message.includes('invalid signature')) {
+        throw new Error('Invalid token signature');
+      }
+      if (message.includes('invalid token')) {
+        throw new Error('Invalid token format');
+      }
+      throw new Error(`Token signature verification failed: ${message}`);
     }
+
+    // Step 2: Check token exists in database
+    const tokenHash = this.hashToken(token);
+    const storedToken = await this.prisma.accessToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!storedToken) {
+      throw new Error(
+        'Token not found - may have been revoked or never issued',
+      );
+    }
+
+    // Step 3: Check if token has been revoked
+    if (storedToken.revokedAt) {
+      throw new Error('Token has been revoked');
+    }
+
+    // Step 4: Verify expiry against database (redundant with JWT but adds security)
+    if (storedToken.expiresAt < new Date()) {
+      throw new Error('Token has expired');
+    }
+
+    return payload;
+  }
+
+  /**
+   * Validate token for Vault API access
+   * Returns approved fields/scopes the token has access to
+   */
+  async validateVaultToken(
+    token: string,
+  ): Promise<{ userId: string; appId: string; approvedFields: string[] }> {
+    const payload = await this.verifyAccessToken(token);
+    const tokenHash = this.hashToken(token);
+
+    const storedToken = await this.prisma.accessToken.findUnique({
+      where: { tokenHash },
+      select: {
+        userId: true,
+        appId: true,
+        approvedFields: true,
+      },
+    });
+
+    if (!storedToken) {
+      throw new Error('Token metadata not found');
+    }
+
+    return {
+      userId: storedToken.userId,
+      appId: storedToken.appId,
+      approvedFields: storedToken.approvedFields,
+    };
   }
 
   /**
