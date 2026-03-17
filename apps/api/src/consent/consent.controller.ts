@@ -65,22 +65,6 @@ export class ConsentController {
     };
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async getConsentDetail(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
-    const consentRequest = await this.consentService.getConsentDetail(
-      id,
-      user.id,
-    );
-
-    return {
-      data: consentRequest,
-    };
-  }
-
   @Post(':id/approve')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -111,4 +95,21 @@ export class ConsentController {
       data: result,
     };
   }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getConsentDetail(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const consentRequest = await this.consentService.getConsentDetail(
+      id,
+      user.id,
+    );
+
+    return {
+      data: consentRequest,
+    };
+  }
 }
+
