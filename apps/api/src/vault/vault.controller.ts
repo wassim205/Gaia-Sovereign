@@ -15,10 +15,12 @@ import { VaultService } from './vault.service';
 import { CreateVaultEntryDto } from './dto/create-vault-entry.dto';
 import { UpdateVaultEntryDto } from './dto/update-vault-entry.dto';
 import { QueryVaultEntriesDto } from './dto/query-vault-entries.dto';
+import { ScopedVaultAccessDto } from './dto/scoped-vault-access.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { CurrentUserData } from 'src/auth/decorators/current-user.decorator';
 import { UsersService } from 'src/users/users.service';
+import { VaultRateLimitGuard } from './guards/vault-rate-limit.guard';
 
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
@@ -106,5 +108,34 @@ export class VaultController {
     @Param('id') id: string,
   ) {
     return this.vaultService.remove(user.id, id);
+  }
+
+  @Post('scoped/access')
+  @UseGuards(VaultRateLimitGuard)
+  @HttpCode(HttpStatus.OK)
+  async getScopedData(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: ScopedVaultAccessDto,
+  ) {
+    // In a real scenario, these would come from the token context
+    // For now, we're demonstrating with mock data
+    // These would be the approved fields from the consent token
+    const approvedFields = ['email', 'username', 'phone', 'profile'];
+
+    // Get user's master key
+    const fullUser = await this.usersService.findById(user.id);
+    const masterKey = fullUser?.encryptedMasterKey || '';
+
+    const data = await this.vaultService.getScopedVaultData(
+      user.id,
+      masterKey,
+      approvedFields,
+      dto.requestedFields,
+    );
+
+    return {
+      message: 'Scoped vault data retrieved successfully',
+      data,
+    };
   }
 }

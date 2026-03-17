@@ -196,6 +196,105 @@ export class VaultService {
     }));
   }
 
+  /**
+   * Get vault data with scoped access based on token's approved fields
+   * GS-113: Parse and validate requested fields against token scopes
+   * GS-114: Query vault_fields using IN with approved scope list
+   * GS-115: Decrypt only requested allowed encrypted_value records
+   */
+  async getScopedVaultData(
+    userId: string,
+    masterKey: string,
+    approvedFields: string[],
+    requestedFields?: string[],
+  ) {
+    // Normalize approved fields to lowercase for matching
+    const normalizedApproved = this.normalizeFields(approvedFields);
+
+    // Determine which fields to return
+    let fieldsToReturn = normalizedApproved;
+
+    // If specific fields are requested, validate they are approved
+    if (requestedFields && requestedFields.length > 0) {
+      const normalizedRequested = this.normalizeFields(requestedFields);
+
+      // Find intersection: only fields that are both requested AND approved
+      fieldsToReturn = normalizedApproved.filter((field) =>
+        normalizedRequested.includes(field),
+      );
+
+      // Validate all requested fields are approved
+      const unapprovedFields = normalizedRequested.filter(
+        (field) => !normalizedApproved.includes(field),
+      );
+
+      if (unapprovedFields.length > 0) {
+        throw new ForbiddenException(
+          `Requested fields not approved: ${unapprovedFields.join(', ')}. Approved fields: ${normalizedApproved.join(', ')}`,
+        );
+      }
+    }
+
+    if (fieldsToReturn.length === 0) {
+      return {
+        userId,
+        approvedFields: normalizedApproved,
+        returnedFields: [],
+        data: [],
+      };
+    }
+
+    // Query vault fields that match the canonical scope list
+    const vaultFields = await this.prisma.vaultField.findMany({
+      where: {
+        fieldKey: {
+          in: fieldsToReturn,
+        },
+        vaultEntry: {
+          userId,
+        },
+      },
+      include: {
+        vaultEntry: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            description: true,
+            isFavorite: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    // Decrypt only the allowed fields
+    const decryptedData = vaultFields.map((field) => ({
+      fieldKey: field.fieldKey,
+      value: this.encryptionService.decrypt(field.encryptedValue, masterKey),
+      fieldType: field.fieldType,
+      vaultEntry: field.vaultEntry,
+      createdAt: field.createdAt,
+      updatedAt: field.updatedAt,
+    }));
+
+    return {
+      userId,
+      approvedFields: normalizedApproved,
+      returnedFields: fieldsToReturn,
+      data: decryptedData,
+    };
+  }
+
+  private normalizeFields(fields: string[]): string[] {
+    const normalized = fields
+      .map((field) => field.trim().toLowerCase())
+      .filter(Boolean);
+
+    return Array.from(new Set(normalized)).sort();
+  }
+
   private decryptVaultEntry(entry: any, masterKey: string) {
     return {
       ...entry,
