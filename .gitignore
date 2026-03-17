@@ -9,3 +9,7 @@ dist
 coverage
 DATABASE_SCHEMA.md
 FRONTEND_DESIGN
+CONSENT_TESTING_GUIDE.md
+test-consent.sh
+POSTMAN_GUIDE.md
+Gaia_Sovereign_API.postman_collection.json
