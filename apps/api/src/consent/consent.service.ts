@@ -8,6 +8,7 @@ import {
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/auth/services/password.service';
+import { TokenService } from 'src/tokens/token.service';
 import { CreateConsentRequestDto } from './dto/create-consent-request.dto';
 import { ApproveConsentRequestDto } from './dto/approve-consent-request.dto';
 
@@ -41,6 +42,7 @@ export class ConsentService {
   constructor(
     private prisma: PrismaService,
     private passwordService: PasswordService,
+    private tokenService: TokenService,
   ) {}
 
   private normalizeFields(fields: string[]): string[] {
@@ -242,10 +244,26 @@ export class ConsentService {
         requestedFields: true,
         redirectUri: true,
         state: true,
+        appId: true,
       },
     });
 
-    return updated;
+    // Generate access token for the approved consent
+    const tokenResult = await this.tokenService.generateAccessToken({
+      userId,
+      appId: updated.appId,
+      approvedFields: normalizedApprovedFields,
+    });
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      requestedFields: updated.requestedFields,
+      redirectUri: updated.redirectUri,
+      state: updated.state,
+      accessToken: tokenResult.token,
+      tokenExpiresAt: tokenResult.expiresAt,
+    };
   }
 
   async denyConsent(consentId: string, userId: string) {

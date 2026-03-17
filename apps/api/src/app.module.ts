@@ -11,6 +11,7 @@ import { CommonModule } from './common/common.module';
 import { VaultModule } from './vault/vault.module';
 import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module';
 import { ConsentModule } from './consent/consent.module';
+import { TokenModule } from './tokens/token.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ConsentModule } from './consent/consent.module';
     VaultModule,
     ThirdPartyAppsModule,
     ConsentModule,
+    TokenModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
