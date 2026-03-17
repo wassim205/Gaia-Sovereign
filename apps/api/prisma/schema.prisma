@@ -23,6 +23,13 @@ enum ThirdPartyAppStatus {
   BLOCKED
 }
 
+enum ConsentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
 enum VaultCategory {
   PROFILE
   CONTACT
@@ -65,10 +72,30 @@ model ThirdPartyApp {
   secretRotatedAt   DateTime?           @map("secret_rotated_at")
 
   owner             User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  consentRequests   ConsentRequest[]
 
   @@index([ownerId])
   @@index([status])
   @@map("third_party_apps")
+}
+
+model ConsentRequest {
+  id              String               @id @default(uuid())
+  appId           String               @map("app_id")
+  redirectUri     String               @map("redirect_uri")
+  requestedFields String[]             @map("requested_fields")
+  status          ConsentRequestStatus @default(PENDING)
+  expiresAt       DateTime             @map("expires_at")
+  state           String?              @db.VarChar(255)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  app             ThirdPartyApp        @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@index([appId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("consent_requests")
 }
 
 model VaultEntry {

@@ -10,6 +10,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { CommonModule } from './common/common.module';
 import { VaultModule } from './vault/vault.module';
 import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module';
+import { ConsentModule } from './consent/consent.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module
     PrismaModule,
     VaultModule,
     ThirdPartyAppsModule,
+    ConsentModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
