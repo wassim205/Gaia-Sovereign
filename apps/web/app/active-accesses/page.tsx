@@ -37,7 +37,7 @@ export default function ActiveAccessesPage() {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
         return;
@@ -87,7 +87,7 @@ export default function ActiveAccessesPage() {
     try {
       setRevoking(tokenId);
 
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
         return;
