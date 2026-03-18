@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -22,6 +23,8 @@ export default function ActiveAccessesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedAccess, setSelectedAccess] = useState<ActiveAccess | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -63,14 +66,21 @@ export default function ActiveAccessesPage() {
   };
 
   const handleRevokeClick = (access: ActiveAccess) => {
-    // Show confirmation modal (implemented in GS-129)
-    const confirmRevoke = window.confirm(
-      `Are you sure you want to revoke access for "${access.appName}"?\n\nThis app will no longer be able to access your data.`,
-    );
+    // Show confirmation modal (GS-129)
+    setSelectedAccess(access);
+    setShowConfirmModal(true);
+  };
 
-    if (confirmRevoke) {
-      revokeToken(access.id);
+  const handleConfirmRevoke = () => {
+    if (selectedAccess) {
+      revokeToken(selectedAccess.id);
+      setShowConfirmModal(false);
     }
+  };
+
+  const handleCancelRevoke = () => {
+    setSelectedAccess(null);
+    setShowConfirmModal(false);
   };
 
   const revokeToken = async (tokenId: string) => {
@@ -219,6 +229,22 @@ export default function ActiveAccessesPage() {
           </Link>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Revoke App Access"
+        message={
+          selectedAccess
+            ? `Are you sure you want to revoke access for "${selectedAccess.appName}"? This app will no longer be able to access your data.`
+            : ''
+        }
+        isDangerous
+        isLoading={revoking === selectedAccess?.id}
+        confirmText="Revoke"
+        cancelText="Cancel"
+        onConfirm={handleConfirmRevoke}
+        onCancel={handleCancelRevoke}
+      />
     </div>
   );
 }
