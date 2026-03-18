@@ -34,6 +34,12 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    develop:
+      watch:
+        - path: ./apps/api/src
+          action: rebuild
+        - path: ./apps/api/package.json
+          action: rebuild
 
   web:
     build:
@@ -48,6 +54,16 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    develop:
+      watch:
+        - path: ./apps/web/src
+          action: rebuild
+        - path: ./apps/web/app
+          action: rebuild
+        - path: ./apps/web/components
+          action: rebuild
+        - path: ./apps/web/package.json
+          action: rebuild
 
 volumes:
   db_data:
