@@ -12,6 +12,7 @@ import { VaultModule } from './vault/vault.module';
 import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module';
 import { ConsentModule } from './consent/consent.module';
 import { TokenModule } from './tokens/token.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { TokenModule } from './tokens/token.module';
     ThirdPartyAppsModule,
     ConsentModule,
     TokenModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
