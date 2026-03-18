@@ -20,7 +20,6 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { CurrentUserData } from 'src/auth/decorators/current-user.decorator';
 import { UsersService } from 'src/users/users.service';
-import { VaultRateLimitGuard } from './guards/vault-rate-limit.guard';
 
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
@@ -111,7 +110,6 @@ export class VaultController {
   }
 
   @Post('scoped/access')
-  @UseGuards(VaultRateLimitGuard)
   @HttpCode(HttpStatus.OK)
   async getScopedData(
     @CurrentUser() user: CurrentUserData,
