@@ -25,6 +25,8 @@ import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import { showToast } from '@/components/ui/Toast';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 interface AuditLog {
   id: string;
   action: string;
@@ -443,7 +445,7 @@ export default function AuditLogsPage() {
       params.append('limit', '20');
       params.append('offset', ((pageNum - 1) * 20).toString());
 
-      const response = await fetch(`/api/audit/logs?${params.toString()}`, {
+      const response = await fetch(`${API_URL}/api/audit/logs?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -497,7 +499,7 @@ export default function AuditLogsPage() {
       if (filters.action) params.append('action', filters.action);
       if (filters.status) params.append('status', filters.status);
 
-      const response = await fetch(`/api/audit/logs?${params.toString()}&limit=1000`, {
+      const response = await fetch(`${API_URL}/api/audit/logs?${params.toString()}&limit=1000`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
