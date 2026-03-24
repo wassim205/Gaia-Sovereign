@@ -59,6 +59,7 @@ describe('AuditLogService', () => {
       const result = await service.createAuditLog(dto);
 
       expect(result).toEqual(mockAuditLog);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.auditLog.create).toHaveBeenCalled?.();
     });
 
@@ -73,6 +74,7 @@ describe('AuditLogService', () => {
 
       await service.createAuditLog(dto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.auditLog.create).toHaveBeenCalled?.();
     });
 
@@ -90,6 +92,7 @@ describe('AuditLogService', () => {
 
       await service.createAuditLog(dto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.auditLog.create).toHaveBeenCalled?.();
     });
 
@@ -106,6 +109,7 @@ describe('AuditLogService', () => {
 
       await service.createAuditLog(dto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.auditLog.create).toHaveBeenCalled?.();
     });
   });
@@ -147,7 +151,9 @@ describe('AuditLogService', () => {
       (prisma.auditLog.count as jest.Mock).mockResolvedValue(1);
       (prisma.auditLog.findMany as jest.Mock).mockResolvedValue([mockAuditLog]);
 
-      const result = await service.getAuditLogs('user-1', { status: 'success' });
+      const result = await service.getAuditLogs('user-1', {
+        status: 'success',
+      });
 
       expect(result.data).toHaveLength(1);
     });
@@ -192,6 +198,7 @@ describe('AuditLogService', () => {
 
       await service.getAuditLogs('user-1', {});
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.auditLog.findMany).toHaveBeenCalledWith?.(
         expect.objectContaining({
           orderBy: { timestamp: 'desc' },

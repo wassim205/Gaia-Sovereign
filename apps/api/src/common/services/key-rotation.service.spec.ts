@@ -289,5 +289,3 @@ describe('KeyRotationService (GS-138: Encryption/rotation)', () => {
     });
   });
 });
-
-

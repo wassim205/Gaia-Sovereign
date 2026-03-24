@@ -59,7 +59,9 @@ describe('TokenService', () => {
 
       expect(result.token).toBe(mockToken);
       expect(result.expiresAt).toEqual(expiresAt);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(jwtService.sign).toHaveBeenCalled?.();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.accessToken.create).toHaveBeenCalled?.();
     });
 
@@ -76,6 +78,7 @@ describe('TokenService', () => {
         approvedFields: ['email'],
       });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.accessToken.create).toHaveBeenCalled?.();
     });
   });
@@ -178,6 +181,7 @@ describe('TokenService', () => {
 
       await service.revokeAccessToken(mockToken);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.accessToken.update).toHaveBeenCalledWith?.(
         expect.anything() as never,
       );

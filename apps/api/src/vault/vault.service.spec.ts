@@ -76,9 +76,7 @@ describe('VaultService', () => {
 
   describe('create', () => {
     it('should create vault entry with encrypted fields', async () => {
-      (prisma.vaultEntry.create as jest.Mock).mockResolvedValue(
-        mockVaultEntry,
-      );
+      (prisma.vaultEntry.create as jest.Mock).mockResolvedValue(mockVaultEntry);
 
       await service.create('user-1', 'master-key', {
         title: 'My Passwords',
@@ -86,7 +84,9 @@ describe('VaultService', () => {
         fields: [{ fieldKey: 'username', value: 'john', fieldType: 'text' }],
       });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.vaultEntry.create).toHaveBeenCalled?.();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(encryptionService.encrypt).toHaveBeenCalled?.();
     });
   });
@@ -144,6 +144,7 @@ describe('VaultService', () => {
         sortOrder: 'asc',
       });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.vaultEntry.findMany).toHaveBeenCalled?.();
     });
   });
@@ -157,6 +158,7 @@ describe('VaultService', () => {
       const result = await service.findOne('user-1', 'master-key', 'vault-1');
 
       expect(result.id).toBe('vault-1');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(encryptionService.decrypt).toHaveBeenCalled?.();
     });
 
@@ -198,6 +200,7 @@ describe('VaultService', () => {
       );
 
       expect(result.title).toBe('Updated');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(auditLogService.createAuditLog).toHaveBeenCalled?.();
     });
 
@@ -222,6 +225,7 @@ describe('VaultService', () => {
 
       await service.remove('user-1', 'vault-1');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.vaultEntry.delete).toHaveBeenCalled?.();
     });
 
@@ -233,6 +237,7 @@ describe('VaultService', () => {
 
       await service.remove('user-1', 'vault-1');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(auditLogService.createAuditLog).toHaveBeenCalled?.();
     });
   });
@@ -270,6 +275,7 @@ describe('VaultService', () => {
       );
 
       expect(result).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(encryptionService.decrypt).toHaveBeenCalled?.();
     });
 
@@ -292,6 +298,7 @@ describe('VaultService', () => {
         'master-key',
       );
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(encryptionService.decrypt).toHaveBeenCalled?.();
     });
   });

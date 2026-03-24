@@ -52,6 +52,11 @@ describe('TokenController', () => {
       expect(result.data.id).toBe(tokenId);
       expect(result.data.appId).toBe('app-1');
       expect(result.data.revokedAt).toBeInstanceOf(Date);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(tokenService.revokeAccessTokenById).toHaveBeenCalledWith(
+        tokenId,
+        mockUser.id,
+      );
     });
 
     it('should throw when token not found', async () => {
@@ -96,6 +101,7 @@ describe('TokenController', () => {
 
       await controller.revokeToken(mockUser, { tokenId });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(tokenService.revokeAccessTokenById).toHaveBeenCalledWith(
         tokenId,
         mockUser.id,

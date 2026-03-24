@@ -14,12 +14,6 @@ describe('AuthController', () => {
     createdAt: new Date(),
   };
 
-  const mockLoginResult = {
-    accessToken: 'token',
-    refreshToken: 'refresh',
-    user: mockUser,
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],

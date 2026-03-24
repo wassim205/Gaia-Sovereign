@@ -46,7 +46,11 @@ describe('RateLimitMiddleware', () => {
     (rateLimiterService.getResetTime as jest.Mock).mockReturnValue(30000);
 
     expect(() => {
-      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware.use(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext,
+      );
     }).toThrow(HttpException);
   });
 
@@ -55,12 +59,16 @@ describe('RateLimitMiddleware', () => {
     (rateLimiterService.getResetTime as jest.Mock).mockReturnValue(30000);
 
     try {
-      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware.use(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext,
+      );
     } catch {
       // ignore
     }
 
-    const getHeader = (mockResponse as any).setHeader as jest.Mock;
+    const getHeader = mockResponse.setHeader as jest.Mock;
     expect(getHeader).toHaveBeenCalledWith('Retry-After', '30');
   });
 
@@ -82,13 +90,17 @@ describe('RateLimitMiddleware', () => {
   it('should enforce client rate limit when provided', () => {
     mockRequest.headers = { 'x-client-id': 'client-123' };
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     const mock = rateLimiterService.isAllowed as jest.Mock;
     mock.mockReturnValueOnce(true); // IP allowed
     mock.mockReturnValueOnce(false); // Client blocked
 
     expect(() => {
-      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware.use(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext,
+      );
     }).toThrow('Too many requests from this client');
   });
 });
-

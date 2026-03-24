@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 
 describe('EncryptionServiceV2', () => {
   let service: EncryptionServiceV2;
-  let keyManagementService: KeyManagementService;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -20,9 +19,6 @@ describe('EncryptionServiceV2', () => {
     }).compile();
 
     service = module.get<EncryptionServiceV2>(EncryptionServiceV2);
-    keyManagementService = module.get<KeyManagementService>(
-      KeyManagementService,
-    );
   });
 
   describe('encryptWithMetadata', () => {
@@ -31,11 +27,7 @@ describe('EncryptionServiceV2', () => {
       const userId = 'user-123';
       const masterKey = 'master-secret';
 
-      const payload = service.encryptWithMetadata(
-        plaintext,
-        userId,
-        masterKey,
-      );
+      const payload = service.encryptWithMetadata(plaintext, userId, masterKey);
 
       expect(payload.ciphertext).toBeDefined();
       expect(payload.metadata).toBeDefined();
@@ -74,16 +66,8 @@ describe('EncryptionServiceV2', () => {
       const userId = 'user-123';
       const masterKey = 'master-secret';
 
-      const payload = service.encryptWithMetadata(
-        plaintext,
-        userId,
-        masterKey,
-      );
-      const decrypted = service.decryptWithMetadata(
-        payload,
-        userId,
-        masterKey,
-      );
+      const payload = service.encryptWithMetadata(plaintext, userId, masterKey);
+      const decrypted = service.decryptWithMetadata(payload, userId, masterKey);
 
       expect(decrypted).toBe(plaintext);
     });
@@ -93,11 +77,7 @@ describe('EncryptionServiceV2', () => {
       const userId = 'user-123';
       const masterKey = 'master-secret';
 
-      const payload = service.encryptWithMetadata(
-        plaintext,
-        userId,
-        masterKey,
-      );
+      const payload = service.encryptWithMetadata(plaintext, userId, masterKey);
 
       expect(() =>
         service.decryptWithMetadata(payload, userId, 'wrong-key'),
@@ -109,11 +89,7 @@ describe('EncryptionServiceV2', () => {
       const userId = 'user-123';
       const masterKey = 'master-secret';
 
-      const payload = service.encryptWithMetadata(
-        plaintext,
-        userId,
-        masterKey,
-      );
+      const payload = service.encryptWithMetadata(plaintext, userId, masterKey);
 
       expect(() =>
         service.decryptWithMetadata(payload, 'user-456', masterKey),
@@ -160,11 +136,7 @@ describe('EncryptionServiceV2', () => {
 
     it('should fail with malformed JSON', () => {
       expect(() =>
-        service.deserializeAndDecrypt(
-          'not-json',
-          'user-123',
-          'master-secret',
-        ),
+        service.deserializeAndDecrypt('not-json', 'user-123', 'master-secret'),
       ).toThrow();
     });
   });
@@ -194,11 +166,7 @@ describe('EncryptionServiceV2', () => {
       const userId = 'user-123';
       const masterKey = 'master-secret';
 
-      const payload = service.encryptWithMetadata(
-        plaintext,
-        userId,
-        masterKey,
-      );
+      const payload = service.encryptWithMetadata(plaintext, userId, masterKey);
       const metadata = service.extractMetadata(payload);
 
       expect(metadata.keyVersion).toBe(1);

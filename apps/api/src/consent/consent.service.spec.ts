@@ -99,6 +99,7 @@ describe('ConsentService', () => {
         expect(result.accessToken).toBe('access_token_123');
         expect(result.redirectUri).toBe('https://example.com/callback');
         expect(result.state).toBe('state123');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(auditLogService.createAuditLog).toHaveBeenCalledWith(
           expect.objectContaining({
             action: 'CONSENT_APPROVE',
@@ -137,6 +138,7 @@ describe('ConsentService', () => {
         });
 
         expect(result.status).toBe('APPROVED');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(tokenService.generateAccessToken).toHaveBeenCalledWith(
           expect.objectContaining({
             approvedFields: ['email', 'name'],
@@ -260,6 +262,7 @@ describe('ConsentService', () => {
 
         expect(result.status).toBe('REJECTED');
         expect(result.redirectUri).toBe('https://example.com/callback');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(auditLogService.createAuditLog).toHaveBeenCalledWith(
           expect.objectContaining({
             action: 'CONSENT_DENY',
@@ -521,9 +524,14 @@ describe('ConsentService', () => {
 
         const result = await service.createConsentRequest(dto);
 
-        expect(result.consentRequest.requestedFields).toEqual(['email', 'name']);
+        expect(result.consentRequest.requestedFields).toEqual([
+          'email',
+          'name',
+        ]);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(prisma.consentRequest.create).toHaveBeenCalledWith(
           expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             data: expect.objectContaining({
               requestedFields: ['email', 'name'],
             }),
@@ -562,7 +570,10 @@ describe('ConsentService', () => {
 
         const result = await service.createConsentRequest(dto);
 
-        expect(result.consentRequest.requestedFields).toEqual(['email', 'name']);
+        expect(result.consentRequest.requestedFields).toEqual([
+          'email',
+          'name',
+        ]);
       });
 
       it('should accept valid redirect URI from registered list', async () => {

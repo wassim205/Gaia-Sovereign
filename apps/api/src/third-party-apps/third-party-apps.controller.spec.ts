@@ -55,9 +55,7 @@ describe('ThirdPartyAppsController', () => {
       ],
     }).compile();
 
-    controller = module.get<ThirdPartyAppsController>(
-      ThirdPartyAppsController,
-    );
+    controller = module.get<ThirdPartyAppsController>(ThirdPartyAppsController);
     service = module.get<ThirdPartyAppsService>(ThirdPartyAppsService);
   });
 
@@ -81,6 +79,7 @@ describe('ThirdPartyAppsController', () => {
 
         const result = await controller.create(mockUser, dto);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.create).toHaveBeenCalledWith(mockUser.id, dto);
         expect(result.data).toHaveProperty('clientSecret');
         expect(result.message).toContain('created successfully');
@@ -94,6 +93,7 @@ describe('ThirdPartyAppsController', () => {
 
         const result = await controller.findAll(mockUser);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.findAll).toHaveBeenCalledWith(mockUser.id);
         expect(result.data).toEqual(apps);
       });
@@ -116,6 +116,7 @@ describe('ThirdPartyAppsController', () => {
 
         const result = await controller.rotateSecret(mockUser, 'app-123');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.rotateSecret).toHaveBeenCalledWith(
           'app-123',
           mockUser.id,
@@ -144,6 +145,7 @@ describe('ThirdPartyAppsController', () => {
           status: 'BLOCKED',
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.changeStatus).toHaveBeenCalledWith(
           'app-123',
           mockUser.id,
@@ -159,6 +161,7 @@ describe('ThirdPartyAppsController', () => {
           status: 'ACTIVE',
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.changeStatus).toHaveBeenCalledWith(
           'app-123',
           mockUser.id,
@@ -193,6 +196,7 @@ describe('ThirdPartyAppsController', () => {
 
         const result = await controller.update(mockUser, 'app-123', dto);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(service.update).toHaveBeenCalledWith(
           'app-123',
           mockUser.id,

@@ -69,9 +69,11 @@ describe('ThirdPartyAppsService', () => {
 
       const result = await service.create(ownerId, dto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(passwordService.hashPassword).toHaveBeenCalledWith(
         expect.stringMatching(/^gss_/),
       );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.thirdPartyApp.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -133,6 +135,7 @@ describe('ThirdPartyAppsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).not.toHaveProperty('secretHash');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.thirdPartyApp.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           select: expect.not.objectContaining({
@@ -170,13 +173,17 @@ describe('ThirdPartyAppsService', () => {
 
       const result = await service.rotateSecret(appId, ownerId);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(passwordService.hashPassword).toHaveBeenCalledWith(
         expect.stringMatching(/^gss_/),
       );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.thirdPartyApp.update).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           data: expect.objectContaining({
             secretHash: newHash,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             secretRotatedAt: expect.any(Date),
           }),
         }),
