@@ -55,6 +55,7 @@ model User {
   vaultEntries        VaultEntry[]
   thirdPartyApps      ThirdPartyApp[]
   accessTokens        AccessToken[]
+  auditLogs           AuditLog[]
   
   @@map("users")
 }
@@ -75,6 +76,7 @@ model ThirdPartyApp {
   owner             User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   consentRequests   ConsentRequest[]
   accessTokens      AccessToken[]
+  auditLogs         AuditLog[]
 
   @@index([ownerId])
   @@index([status])
@@ -153,4 +155,33 @@ model VaultField {
   @@index([vaultEntryId])
   @@index([fieldKey])
   @@map("vault_fields")
+}
+
+model AuditLog {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  action            String    @db.VarChar(50)
+  resourceType      String    @map("resource_type") @db.VarChar(50)
+  resourceId        String?   @map("resource_id")
+  appId             String?   @map("app_id")
+  approvedFields    String[]  @map("approved_fields")
+  requestedFields   String[]  @map("requested_fields")
+  accessedFields    String[]  @map("accessed_fields")
+  ipAddress         String?   @map("ip_address") @db.VarChar(45)
+  userAgent         String?   @map("user_agent") @db.Text
+  status            String    @default("success") @db.VarChar(20)
+  details           String?   @db.Text
+  timestamp         DateTime  @default(now())
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  app               ThirdPartyApp? @relation(fields: [appId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([resourceType])
+  @@index([appId])
+  @@index([userId, timestamp])
+  @@map("audit_logs")
 }

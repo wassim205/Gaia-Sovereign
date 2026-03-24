@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EncryptionService } from 'src/common/services/encryption.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 import { CreateVaultEntryDto } from './dto/create-vault-entry.dto';
 import { UpdateVaultEntryDto } from './dto/update-vault-entry.dto';
 import { QueryVaultEntriesDto } from './dto/query-vault-entries.dto';
@@ -14,6 +15,7 @@ export class VaultService {
   constructor(
     private prisma: PrismaService,
     private encryptionService: EncryptionService,
+    private auditLogService: AuditLogService,
   ) {}
 
   async create(userId: string, masterKey: string, dto: CreateVaultEntryDto) {
@@ -201,12 +203,16 @@ export class VaultService {
    * GS-113: Parse and validate requested fields against token scopes
    * GS-114: Query vault_fields using IN with approved scope list
    * GS-115: Decrypt only requested allowed encrypted_value records
+   * GS-120: Log vault access events with field tracking
    */
   async getScopedVaultData(
     userId: string,
     masterKey: string,
     approvedFields: string[],
     requestedFields?: string[],
+    appId?: string,
+    ipAddress?: string,
+    userAgent?: string,
   ) {
     // Normalize approved fields to lowercase for matching
     const normalizedApproved = this.normalizeFields(approvedFields);
@@ -229,6 +235,21 @@ export class VaultService {
       );
 
       if (unapprovedFields.length > 0) {
+        // Log failed access attempt
+        await this.auditLogService.createAuditLog({
+          userId,
+          action: 'VAULT_READ',
+          resourceType: 'VAULT_FIELDS',
+          appId,
+          approvedFields: normalizedApproved,
+          requestedFields: normalizedRequested,
+          accessedFields: [],
+          ipAddress,
+          userAgent,
+          status: 'denied',
+          details: `Requested unapproved fields: ${unapprovedFields.join(', ')}`,
+        });
+
         throw new ForbiddenException(
           `Requested fields not approved: ${unapprovedFields.join(', ')}. Approved fields: ${normalizedApproved.join(', ')}`,
         );
@@ -278,6 +299,25 @@ export class VaultService {
       createdAt: field.createdAt,
       updatedAt: field.updatedAt,
     }));
+
+    // Track which fields were actually accessed/returned
+    const accessedFields = Array.from(
+      new Set(decryptedData.map((d) => d.fieldKey)),
+    );
+
+    // Log successful access
+    await this.auditLogService.createAuditLog({
+      userId,
+      action: 'VAULT_READ',
+      resourceType: 'VAULT_FIELDS',
+      appId,
+      approvedFields: normalizedApproved,
+      requestedFields: requestedFields ? this.normalizeFields(requestedFields) : normalizedApproved,
+      accessedFields,
+      ipAddress,
+      userAgent,
+      status: 'success',
+    });
 
     return {
       userId,

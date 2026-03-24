@@ -156,6 +156,45 @@ export class TokenService {
   }
 
   /**
+   * Revoke an access token by ID
+   * GS-127: Revoke token endpoint
+   */
+  async revokeAccessTokenById(tokenId: string, userId: string) {
+    const token = await this.prisma.accessToken.findUnique({
+      where: { id: tokenId },
+      select: {
+        id: true,
+        userId: true,
+        appId: true,
+        approvedFields: true,
+      },
+    });
+
+    if (!token) {
+      throw new Error('Token not found');
+    }
+
+    // Verify ownership - user can only revoke their own tokens
+    if (token.userId !== userId) {
+      throw new Error('Unauthorized: Cannot revoke other users tokens');
+    }
+
+    const revokedToken = await this.prisma.accessToken.update({
+      where: { id: tokenId },
+      data: { revokedAt: new Date() },
+      select: {
+        id: true,
+        appId: true,
+        userId: true,
+        approvedFields: true,
+        revokedAt: true,
+      },
+    });
+
+    return revokedToken;
+  }
+
+  /**
    * Get token info by token hash
    */
   async getTokenInfo(token: string) {

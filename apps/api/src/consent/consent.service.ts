@@ -9,6 +9,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/auth/services/password.service';
 import { TokenService } from 'src/tokens/token.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 import { CreateConsentRequestDto } from './dto/create-consent-request.dto';
 import { ApproveConsentRequestDto } from './dto/approve-consent-request.dto';
 
@@ -43,6 +44,7 @@ export class ConsentService {
     private prisma: PrismaService,
     private passwordService: PasswordService,
     private tokenService: TokenService,
+    private auditLogService: AuditLogService,
   ) {}
 
   private normalizeFields(fields: string[]): string[] {
@@ -255,6 +257,18 @@ export class ConsentService {
       approvedFields: normalizedApprovedFields,
     });
 
+    // Log consent approval action (GS-121)
+    await this.auditLogService.createAuditLog({
+      userId,
+      action: 'CONSENT_APPROVE',
+      resourceType: 'CONSENT_REQUEST',
+      resourceId: updated.id,
+      appId: updated.appId,
+      approvedFields: normalizedApprovedFields,
+      requestedFields: normalizedRequestedFields,
+      status: 'success',
+    });
+
     return {
       id: updated.id,
       status: updated.status,
@@ -305,6 +319,25 @@ export class ConsentService {
         redirectUri: true,
         state: true,
       },
+    });
+
+    // Log consent denial action (GS-121)
+    const consentData = await this.prisma.consentRequest.findUnique({
+      where: { id: consentId },
+      select: {
+        appId: true,
+        requestedFields: true,
+      },
+    });
+
+    await this.auditLogService.createAuditLog({
+      userId,
+      action: 'CONSENT_DENY',
+      resourceType: 'CONSENT_REQUEST',
+      resourceId: consentId,
+      appId: consentData?.appId,
+      requestedFields: consentData?.requestedFields || [],
+      status: 'success',
     });
 
     return updated;
