@@ -82,7 +82,7 @@ export default function RegisterPage() {
       setIsLoading(true);
       
       try {
-        const response = await apiClient.register({
+        await apiClient.register({
           username: form.username,
           email: form.email,
           password: form.password,

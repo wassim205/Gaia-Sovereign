@@ -121,7 +121,7 @@ export class TokenService {
   async validateVaultToken(
     token: string,
   ): Promise<{ userId: string; appId: string; approvedFields: string[] }> {
-    const payload = await this.verifyAccessToken(token);
+    await this.verifyAccessToken(token);
     const tokenHash = this.hashToken(token);
 
     const storedToken = await this.prisma.accessToken.findUnique({

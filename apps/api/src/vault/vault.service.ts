@@ -3,12 +3,33 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EncryptionService } from 'src/common/services/encryption.service';
 import { AuditLogService } from 'src/audit/services/audit-log.service';
 import { CreateVaultEntryDto } from './dto/create-vault-entry.dto';
 import { UpdateVaultEntryDto } from './dto/update-vault-entry.dto';
 import { QueryVaultEntriesDto } from './dto/query-vault-entries.dto';
+
+type VaultEntryWithFields = Prisma.VaultEntryGetPayload<{
+  include: { fields: true };
+}>;
+
+type VaultScopedField = Prisma.VaultFieldGetPayload<{
+  include: {
+    vaultEntry: {
+      select: {
+        id: true;
+        title: true;
+        category: true;
+        description: true;
+        isFavorite: true;
+        createdAt: true;
+        updatedAt: true;
+      };
+    };
+  };
+}>;
 
 @Injectable()
 export class VaultService {
@@ -63,7 +84,7 @@ export class VaultService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = { userId };
+    const where: Prisma.VaultEntryWhereInput = { userId };
 
     if (category) {
       where.category = category;
@@ -80,11 +101,22 @@ export class VaultService {
     const total = await this.prisma.vaultEntry.count({ where });
 
     // Get entries
+    const allowedSortFields: Record<
+      string,
+      Prisma.VaultEntryOrderByWithRelationInput
+    > = {
+      createdAt: { createdAt: sortOrder },
+      updatedAt: { updatedAt: sortOrder },
+      title: { title: sortOrder },
+      category: { category: sortOrder },
+    };
+    const orderBy = allowedSortFields[sortBy] || allowedSortFields.createdAt;
+
     const entries = await this.prisma.vaultEntry.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { [sortBy]: sortOrder },
+      orderBy,
       include: {
         fields: true,
       },
@@ -133,7 +165,7 @@ export class VaultService {
     await this.findOne(userId, masterKey, id);
 
     // Update entry
-    const updateData: any = {};
+    const updateData: Prisma.VaultEntryUpdateInput = {};
 
     if (dto.title !== undefined) updateData.title = dto.title;
     if (dto.category !== undefined) updateData.category = dto.category;
@@ -273,29 +305,30 @@ export class VaultService {
     }
 
     // Query vault fields that match the canonical scope list
-    const vaultFields = await this.prisma.vaultField.findMany({
-      where: {
-        fieldKey: {
-          in: fieldsToReturn,
-        },
-        vaultEntry: {
-          userId,
-        },
-      },
-      include: {
-        vaultEntry: {
-          select: {
-            id: true,
-            title: true,
-            category: true,
-            description: true,
-            isFavorite: true,
-            createdAt: true,
-            updatedAt: true,
+    const vaultFields: VaultScopedField[] =
+      await this.prisma.vaultField.findMany({
+        where: {
+          fieldKey: {
+            in: fieldsToReturn,
+          },
+          vaultEntry: {
+            userId,
           },
         },
-      },
-    });
+        include: {
+          vaultEntry: {
+            select: {
+              id: true,
+              title: true,
+              category: true,
+              description: true,
+              isFavorite: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
+      });
 
     // Decrypt only the allowed fields
     const decryptedData = vaultFields.map((field) => ({
@@ -344,10 +377,10 @@ export class VaultService {
     return Array.from(new Set(normalized)).sort();
   }
 
-  private decryptVaultEntry(entry: any, masterKey: string) {
+  private decryptVaultEntry(entry: VaultEntryWithFields, masterKey: string) {
     return {
       ...entry,
-      fields: entry.fields.map((field: any) => ({
+      fields: entry.fields.map((field) => ({
         id: field.id,
         fieldKey: field.fieldKey,
         value: this.encryptionService.decrypt(field.encryptedValue, masterKey),

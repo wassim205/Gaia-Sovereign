@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export interface CreateAuditLogDto {
@@ -62,7 +63,7 @@ export class AuditLogService {
    * GS-122: Implement audit logs endpoint with filters
    */
   async getAuditLogs(userId: string, filters: AuditLogFilters) {
-    const where: any = {
+    const where: Prisma.AuditLogWhereInput = {
       userId,
     };
 
@@ -87,7 +88,7 @@ export class AuditLogService {
     }
 
     // Filter by date range
-    const dateFilter: any = {};
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (filters.from) {
       dateFilter.gte = filters.from;
     }

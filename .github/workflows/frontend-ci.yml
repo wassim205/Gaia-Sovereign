@@ -9,6 +9,7 @@ on:
       - 'pnpm-workspace.yaml'
   push:
     branches:
+      - dev
       - main
     paths:
       - 'apps/web/**'
