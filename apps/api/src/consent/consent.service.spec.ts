@@ -388,4 +388,219 @@ describe('ConsentService', () => {
       });
     });
   });
+
+  describe('GS-83: Invalid Clients, Bad Redirect URIs, Malformed Fields', () => {
+    describe('createConsentRequest', () => {
+      it('should reject request with invalid client credentials', async () => {
+        const dto = {
+          clientId: 'gsa_invalid',
+          clientSecret: 'wrong_secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: ['email'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed_secret',
+          redirectUris: [dto.redirectUri],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(false);
+
+        await expect(service.createConsentRequest(dto)).rejects.toThrow(
+          'Invalid client credentials',
+        );
+      });
+
+      it('should reject request for non-existent client', async () => {
+        const dto = {
+          clientId: 'gsa_nonexistent',
+          clientSecret: 'secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: ['email'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue(null);
+
+        await expect(service.createConsentRequest(dto)).rejects.toThrow(
+          NotFoundException,
+        );
+      });
+
+      it('should reject request for inactive/blocked app', async () => {
+        const dto = {
+          clientId: 'gsa_blocked',
+          clientSecret: 'secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: ['email'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue(null);
+
+        await expect(service.createConsentRequest(dto)).rejects.toThrow(
+          'App not found or inactive',
+        );
+      });
+
+      it('should reject unregistered redirect URI', async () => {
+        const dto = {
+          clientId: 'gsa_test',
+          clientSecret: 'secret',
+          redirectUri: 'https://evil.com/steal',
+          requestedFields: ['email'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed',
+          redirectUris: ['https://example.com/callback'],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(true);
+
+        await expect(service.createConsentRequest(dto)).rejects.toThrow(
+          'Redirect URI is not registered',
+        );
+      });
+
+      it('should reject request with empty fields array', async () => {
+        const dto = {
+          clientId: 'gsa_test',
+          clientSecret: 'secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: [],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed',
+          redirectUris: [dto.redirectUri],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(true);
+
+        await expect(service.createConsentRequest(dto)).rejects.toThrow(
+          'At least one field must be requested',
+        );
+      });
+
+      it('should normalize and deduplicate requested fields', async () => {
+        const dto = {
+          clientId: 'gsa_test',
+          clientSecret: 'secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: ['Email', 'NAME', 'email', ' name '],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed',
+          redirectUris: [dto.redirectUri],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(true);
+
+        mockPrismaService.consentRequest.create.mockResolvedValue({
+          id: 'consent-123',
+          appId: 'app-123',
+          redirectUri: dto.redirectUri,
+          requestedFields: ['email', 'name'],
+          expiresAt: new Date(),
+          status: 'PENDING',
+          state: null,
+          createdAt: new Date(),
+        });
+
+        const result = await service.createConsentRequest(dto);
+
+        expect(result.consentRequest.requestedFields).toEqual(['email', 'name']);
+        expect(prisma.consentRequest.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              requestedFields: ['email', 'name'],
+            }),
+          }),
+        );
+      });
+
+      it('should filter out empty/whitespace fields', async () => {
+        const dto = {
+          clientId: 'gsa_test',
+          clientSecret: 'secret',
+          redirectUri: 'https://example.com/callback',
+          requestedFields: ['email', '', '  ', 'name'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed',
+          redirectUris: [dto.redirectUri],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(true);
+
+        mockPrismaService.consentRequest.create.mockResolvedValue({
+          id: 'consent-123',
+          appId: 'app-123',
+          redirectUri: dto.redirectUri,
+          requestedFields: ['email', 'name'],
+          expiresAt: new Date(),
+          status: 'PENDING',
+          state: null,
+          createdAt: new Date(),
+        });
+
+        const result = await service.createConsentRequest(dto);
+
+        expect(result.consentRequest.requestedFields).toEqual(['email', 'name']);
+      });
+
+      it('should accept valid redirect URI from registered list', async () => {
+        const dto = {
+          clientId: 'gsa_test',
+          clientSecret: 'secret',
+          redirectUri: 'https://app.example.com/oauth/callback',
+          requestedFields: ['email'],
+        };
+
+        mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+          id: 'app-123',
+          name: 'Test App',
+          clientId: dto.clientId,
+          secretHash: 'hashed',
+          redirectUris: [
+            'https://example.com/callback',
+            'https://app.example.com/oauth/callback',
+          ],
+        });
+
+        mockPasswordService.verifyPassword.mockResolvedValue(true);
+
+        mockPrismaService.consentRequest.create.mockResolvedValue({
+          id: 'consent-123',
+          appId: 'app-123',
+          redirectUri: dto.redirectUri,
+          requestedFields: ['email'],
+          expiresAt: new Date(),
+          status: 'PENDING',
+          state: null,
+          createdAt: new Date(),
+        });
+
+        const result = await service.createConsentRequest(dto);
+
+        expect(result.consentRequest.redirectUri).toBe(dto.redirectUri);
+      });
+    });
+  });
 });
