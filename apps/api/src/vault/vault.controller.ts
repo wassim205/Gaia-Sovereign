@@ -68,10 +68,7 @@ export class VaultController {
   }
 
   @Get(':id')
-  async findOne(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  async findOne(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     const fullUser = await this.usersService.findById(user.id);
     const masterKey = fullUser?.encryptedMasterKey || '';
 
@@ -102,10 +99,7 @@ export class VaultController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(
-    @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-  ) {
+  async remove(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.vaultService.remove(user.id, id);
   }
 

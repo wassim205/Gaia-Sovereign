@@ -52,7 +52,14 @@ export class VaultService {
     masterKey: string,
     query: QueryVaultEntriesDto,
   ) {
-    const { page = 1, limit = 10, search, category, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      category,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -312,7 +319,9 @@ export class VaultService {
       resourceType: 'VAULT_FIELDS',
       appId,
       approvedFields: normalizedApproved,
-      requestedFields: requestedFields ? this.normalizeFields(requestedFields) : normalizedApproved,
+      requestedFields: requestedFields
+        ? this.normalizeFields(requestedFields)
+        : normalizedApproved,
       accessedFields,
       ipAddress,
       userAgent,

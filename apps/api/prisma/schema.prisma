@@ -146,6 +146,7 @@ model VaultField {
   vaultEntryId    String      @map("vault_entry_id")
   fieldKey        String      @db.VarChar(100)
   encryptedValue  String      @map("encrypted_value") @db.Text
+  encryptionMeta  String?     @map("encryption_meta") @db.Text  // GS-136: JSON-serialized EncryptionMetadata
   fieldType       String      @default("text") @map("field_type") @db.VarChar(50)
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
