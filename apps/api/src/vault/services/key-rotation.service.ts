@@ -24,6 +24,31 @@ export class KeyRotationService {
     private encryptionServiceV2: EncryptionServiceV2,
   ) {}
 
+  private parseMetadata(raw: string | null): EncryptionMetadata {
+    try {
+      const parsed: unknown = JSON.parse(raw || '{}');
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        'keyVersion' in parsed &&
+        typeof (parsed as { keyVersion: unknown }).keyVersion === 'number'
+      ) {
+        return parsed as EncryptionMetadata;
+      }
+    } catch {
+      // Ignore invalid metadata and fallback to default.
+    }
+
+    return {
+      keyVersion: 0,
+      algorithm: 'UNKNOWN',
+      nonce: '',
+      tag: '',
+      salt: '',
+      encryptedAt: Date.now(),
+    };
+  }
+
   async initiateRotation() {
     const oldVersion = this.keyManagementService.getCurrentKeyVersion();
     const rotationMeta =
@@ -100,9 +125,7 @@ export class KeyRotationService {
 
       for (const field of fieldsToRotate) {
         try {
-          const metadata: EncryptionMetadata = JSON.parse(
-            field.encryptionMeta || '{}',
-          );
+          const metadata = this.parseMetadata(field.encryptionMeta);
 
           if (metadata.keyVersion >= currentKeyVersion) {
             stats.skipped += 1;
@@ -223,9 +246,7 @@ export class KeyRotationService {
 
     for (const field of fields) {
       try {
-        const metadata: EncryptionMetadata = JSON.parse(
-          field.encryptionMeta || '{}',
-        );
+        const metadata = this.parseMetadata(field.encryptionMeta);
         const payload: EncryptedPayload = {
           ciphertext: field.encryptedValue,
           metadata,
