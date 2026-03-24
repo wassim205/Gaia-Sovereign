@@ -1,6 +1,5 @@
 import { Test } from '@nestjs/testing';
 import { EncryptionServiceV2 } from './encryption-service-v2.service';
-import { KeyManagementService } from './key-management.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('EncryptionServiceV2', () => {
@@ -10,7 +9,6 @@ describe('EncryptionServiceV2', () => {
     const module = await Test.createTestingModule({
       providers: [
         EncryptionServiceV2,
-        KeyManagementService,
         {
           provide: ConfigService,
           useValue: { get: jest.fn(() => null) },
@@ -110,6 +108,7 @@ describe('EncryptionServiceV2', () => {
       );
 
       expect(typeof serialized).toBe('string');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       expect(() => JSON.parse(serialized)).not.toThrow();
     });
   });

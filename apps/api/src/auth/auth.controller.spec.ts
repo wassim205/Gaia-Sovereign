@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -35,6 +36,7 @@ describe('AuthController', () => {
   describe('getCsrfToken', () => {
     it('should return CSRF token', () => {
       const mockRes = {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         cookie: jest.fn(() => mockRes),
       } as any;
 
@@ -46,6 +48,7 @@ describe('AuthController', () => {
 
     it('should set httpOnly to false for client access', () => {
       const mockRes = {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         cookie: jest.fn(() => mockRes),
       } as any;
 

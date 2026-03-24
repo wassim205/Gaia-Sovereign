@@ -27,6 +27,7 @@ describe('RateLimitMiddleware', () => {
     };
 
     mockResponse = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       setHeader: jest.fn(() => mockResponse),
     } as unknown as Response;
 
@@ -68,6 +69,7 @@ describe('RateLimitMiddleware', () => {
       // ignore
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const getHeader = mockResponse.setHeader as jest.Mock;
     expect(getHeader).toHaveBeenCalledWith('Retry-After', '30');
   });
@@ -79,6 +81,7 @@ describe('RateLimitMiddleware', () => {
 
     middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     const isAllowed = rateLimiterService.isAllowed as jest.Mock;
     expect(isAllowed).toHaveBeenCalledWith(
       'ip:127.0.0.1',
