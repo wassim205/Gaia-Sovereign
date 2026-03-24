@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { EncryptionServiceV2 } from './encryption-service-v2.service';
+import { KeyManagementService } from './key-management.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('EncryptionServiceV2', () => {
@@ -9,6 +10,18 @@ describe('EncryptionServiceV2', () => {
     const module = await Test.createTestingModule({
       providers: [
         EncryptionServiceV2,
+        {
+          provide: KeyManagementService,
+          useValue: {
+            getCurrentKeyVersion: jest.fn().mockReturnValue(1),
+            deriveKeyForUser: jest
+              .fn()
+              .mockReturnValue(Buffer.from('32-char-key-for-aes-256-testing')),
+            getKey: jest
+              .fn()
+              .mockReturnValue(Buffer.from('32-char-key-for-aes-256-testing')),
+          },
+        },
         {
           provide: ConfigService,
           useValue: { get: jest.fn(() => null) },

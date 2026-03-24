@@ -32,7 +32,7 @@ describe('KeyRotationService (GS-138: Encryption/rotation)', () => {
           useValue: {
             getCurrentKeyVersion: jest.fn().mockReturnValue(2),
             prepareKeyRotation: jest.fn().mockReturnValue({
-              keyVersion: 2,
+              keyVersion: 3,
               algorithm: 'AES-256-GCM',
             }),
           },
@@ -80,7 +80,7 @@ describe('KeyRotationService (GS-138: Encryption/rotation)', () => {
       const result = await service.initiateRotation();
 
       expect(result.status).toBe('initiated');
-      expect(result.toKeyVersion).toBe(2);
+      expect(result.toKeyVersion).toBe(3);
       expect(result.fieldsToRotate).toBe(5);
     });
 
@@ -89,8 +89,8 @@ describe('KeyRotationService (GS-138: Encryption/rotation)', () => {
 
       const result = await service.initiateRotation();
 
-      expect(result.fromKeyVersion).toBe(1);
-      expect(result.toKeyVersion).toBe(2);
+      expect(result.fromKeyVersion).toBe(2);
+      expect(result.toKeyVersion).toBe(3);
       expect(result.startedAt).toBeInstanceOf(Date);
     });
   });

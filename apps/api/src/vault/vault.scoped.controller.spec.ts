@@ -202,7 +202,7 @@ describe('VaultController - Scoped Access', () => {
       expect(vaultService.getScopedVaultData).toHaveBeenCalledWith(
         mockUser.id,
         'master-key',
-        ['email', 'name'],
+        ['email', 'username', 'phone', 'profile'],
         ['email', 'name'],
       );
     });

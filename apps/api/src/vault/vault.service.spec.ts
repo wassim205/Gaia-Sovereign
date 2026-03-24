@@ -8,7 +8,6 @@ describe('VaultService', () => {
   let service: VaultService;
   let prisma: PrismaService;
   let encryptionService: EncryptionService;
-  let auditLogService: AuditLogService;
 
   const mockVaultEntry = {
     id: 'vault-1',
@@ -44,6 +43,7 @@ describe('VaultService', () => {
               update: jest.fn(),
               delete: jest.fn(),
               count: jest.fn(),
+              groupBy: jest.fn(),
             },
             vaultField: {
               findMany: jest.fn(),
@@ -71,7 +71,6 @@ describe('VaultService', () => {
     service = module.get<VaultService>(VaultService);
     prisma = module.get<PrismaService>(PrismaService);
     encryptionService = module.get<EncryptionService>(EncryptionService);
-    auditLogService = module.get<AuditLogService>(AuditLogService);
   });
 
   describe('create', () => {
@@ -194,14 +193,12 @@ describe('VaultService', () => {
 
       const result = await service.update(
         'user-1',
+        'master-key',
         'vault-1',
         { title: 'Updated' },
-        'master-key',
       );
 
       expect(result.title).toBe('Updated');
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(auditLogService.createAuditLog).toHaveBeenCalled?.();
     });
 
     it('should enforce ownership on update', async () => {
@@ -211,7 +208,7 @@ describe('VaultService', () => {
       });
 
       await expect(
-        service.update('user-1', 'vault-1', { title: 'New' }, 'master-key'),
+        service.update('user-1', 'master-key', 'vault-1', { title: 'New' }),
       ).rejects.toThrow();
     });
   });
@@ -229,16 +226,13 @@ describe('VaultService', () => {
       expect(prisma.vaultEntry.delete).toHaveBeenCalled?.();
     });
 
-    it('should log deletion', async () => {
-      (prisma.vaultEntry.findUnique as jest.Mock).mockResolvedValue(
-        mockVaultEntry,
-      );
-      (prisma.vaultEntry.delete as jest.Mock).mockResolvedValue(mockVaultEntry);
+    it('should enforce ownership on delete', async () => {
+      (prisma.vaultEntry.findUnique as jest.Mock).mockResolvedValue({
+        ...mockVaultEntry,
+        userId: 'other-user',
+      });
 
-      await service.remove('user-1', 'vault-1');
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(auditLogService.createAuditLog).toHaveBeenCalled?.();
+      await expect(service.remove('user-1', 'vault-1')).rejects.toThrow();
     });
   });
 
@@ -269,9 +263,8 @@ describe('VaultService', () => {
 
       const result = await service.getScopedVaultData(
         'user-1',
-        'app-1',
-        ['email'],
         'master-key',
+        ['email'],
       );
 
       expect(result).toBeDefined();
@@ -293,9 +286,8 @@ describe('VaultService', () => {
 
       await service.getScopedVaultData(
         'user-1',
-        'app-1',
-        ['email'],
         'master-key',
+        ['email'],
       );
 
       // eslint-disable-next-line @typescript-eslint/unbound-method

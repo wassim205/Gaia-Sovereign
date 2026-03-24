@@ -107,7 +107,10 @@ export class VaultController {
     @CurrentUser() user: CurrentUserData,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
-    return this.vaultService.remove(user.id, id);
+    await this.vaultService.remove(user.id, id);
+    return {
+      message: 'Vault entry deleted successfully',
+    };
   }
 
   @Post('scoped/access')

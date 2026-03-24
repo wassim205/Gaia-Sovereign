@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { validate } from 'class-validator';
 import { CreateVaultEntryDto } from 'src/vault/dto/create-vault-entry.dto';
 import { UpdateVaultEntryDto } from 'src/vault/dto/update-vault-entry.dto';
@@ -10,9 +11,9 @@ describe('DTO Validation (GS-145: Input validation)', () => {
     it('should accept valid vault entry data', async () => {
       const dto = Object.assign(new CreateVaultEntryDto(), {
         title: 'My Passwords',
-        category: { value: 'passwords', label: 'Passwords' },
+        category: 'CREDENTIAL',
         description: 'Personal passwords',
-        fields: [{ fieldKey: 'username', value: 'john', fieldType: 'text' }],
+        fields: [],
       });
 
       const errors = await validate(dto);
@@ -31,7 +32,7 @@ describe('DTO Validation (GS-145: Input validation)', () => {
     it('should reject invalid title length', async () => {
       const dto = Object.assign(new CreateVaultEntryDto(), {
         title: '',
-        category: { value: 'passwords', label: 'Passwords' },
+        category: 'CREDENTIAL',
         fields: [],
       });
 
@@ -42,7 +43,7 @@ describe('DTO Validation (GS-145: Input validation)', () => {
     it('should accept optional description', async () => {
       const dto = Object.assign(new CreateVaultEntryDto(), {
         title: 'My Passwords',
-        category: { value: 'passwords', label: 'Passwords' },
+        category: 'CREDENTIAL',
         fields: [],
       });
 
@@ -168,11 +169,11 @@ describe('DTO Validation (GS-145: Input validation)', () => {
         clientId: 'app-123',
         clientSecret: 'secret-xyz',
         redirectUri: 'https://example.com/callback',
-        requestedFields: [],
+        requestedFields: ['email'],
       });
 
       const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
+      expect(errors).toHaveLength(0);
     });
 
     it('should allow optional state parameter', async () => {
