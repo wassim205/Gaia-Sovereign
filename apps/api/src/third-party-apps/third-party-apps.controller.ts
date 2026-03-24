@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
   Param,
   Patch,
   Post,
@@ -16,6 +17,7 @@ import { ThirdPartyAppsService } from './third-party-apps.service';
 import { AppOwnerOrAdminGuard } from './guards/app-owner-or-admin.guard';
 import { CreateThirdPartyAppDto } from './dto/create-third-party-app.dto';
 import { UpdateThirdPartyAppDto } from './dto/update-third-party-app.dto';
+import { ChangeAppStatusDto } from './dto/change-app-status.dto';
 
 @Controller('third-party-apps')
 @UseGuards(JwtAuthGuard)
@@ -55,7 +57,7 @@ export class ThirdPartyAppsController {
   @UseGuards(AppOwnerOrAdminGuard)
   async rotateSecret(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     const { app, clientSecret } = await this.appsService.rotateSecret(
       id,
@@ -76,8 +78,8 @@ export class ThirdPartyAppsController {
   @UseGuards(AppOwnerOrAdminGuard)
   async changeStatus(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
-    @Body() body: { status: 'ACTIVE' | 'BLOCKED' },
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: ChangeAppStatusDto,
   ) {
     const app = await this.appsService.changeStatus(id, user.id, body.status);
 
@@ -92,7 +94,7 @@ export class ThirdPartyAppsController {
   @UseGuards(AppOwnerOrAdminGuard)
   async update(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateThirdPartyAppDto,
   ) {
     const app = await this.appsService.update(id, user.id, dto);

@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { KeyManagementService, EncryptionMetadata } from 'src/common/services/key-management.service';
-import { EncryptionServiceV2, EncryptedPayload } from 'src/common/services/encryption-service-v2.service';
+import {
+  KeyManagementService,
+  EncryptionMetadata,
+} from 'src/common/services/key-management.service';
+import {
+  EncryptionServiceV2,
+  EncryptedPayload,
+} from 'src/common/services/encryption-service-v2.service';
 
 /**
  * GS-135: Key Rotation Service
@@ -20,9 +26,12 @@ export class KeyRotationService {
 
   async initiateRotation() {
     const oldVersion = this.keyManagementService.getCurrentKeyVersion();
-    const rotationMeta = this.keyManagementService.prepareKeyRotation(oldVersion);
+    const rotationMeta =
+      this.keyManagementService.prepareKeyRotation(oldVersion);
 
-    this.logger.log(`Key rotation initiated: ${oldVersion} -> ${rotationMeta.keyVersion}`);
+    this.logger.log(
+      `Key rotation initiated: ${oldVersion} -> ${rotationMeta.keyVersion}`,
+    );
 
     const fieldsToRotate = await this.prisma.vaultField.count({
       where: {
@@ -91,7 +100,9 @@ export class KeyRotationService {
 
       for (const field of fieldsToRotate) {
         try {
-          const metadata: EncryptionMetadata = JSON.parse(field.encryptionMeta || '{}');
+          const metadata: EncryptionMetadata = JSON.parse(
+            field.encryptionMeta || '{}',
+          );
 
           if (metadata.keyVersion >= currentKeyVersion) {
             stats.skipped += 1;
@@ -102,8 +113,16 @@ export class KeyRotationService {
             ciphertext: field.encryptedValue,
             metadata,
           };
-          const plaintext = this.encryptionServiceV2.decryptWithMetadata(payload, userId, masterKey);
-          const newPayload = this.encryptionServiceV2.encryptWithMetadata(plaintext, userId, masterKey);
+          const plaintext = this.encryptionServiceV2.decryptWithMetadata(
+            payload,
+            userId,
+            masterKey,
+          );
+          const newPayload = this.encryptionServiceV2.encryptWithMetadata(
+            plaintext,
+            userId,
+            masterKey,
+          );
 
           if (!dryRun) {
             await this.prisma.vaultField.update({
@@ -124,7 +143,9 @@ export class KeyRotationService {
       }
 
       stats.endedAt = new Date();
-      this.logger.log(`Batch rotation complete: ${stats.processed} processed, ${stats.skipped} skipped, ${stats.errors} errors`);
+      this.logger.log(
+        `Batch rotation complete: ${stats.processed} processed, ${stats.skipped} skipped, ${stats.errors} errors`,
+      );
 
       return {
         ...stats,
@@ -137,7 +158,11 @@ export class KeyRotationService {
     }
   }
 
-  async rotateAllFieldsForUser(userId: string, masterKey: string, batchSize: number = 100) {
+  async rotateAllFieldsForUser(
+    userId: string,
+    masterKey: string,
+    batchSize: number = 100,
+  ) {
     const allStats = {
       totalProcessed: 0,
       totalSkipped: 0,
@@ -148,7 +173,12 @@ export class KeyRotationService {
 
     let hasMoreFields = true;
     while (hasMoreFields) {
-      const batchStats = await this.rotateFieldsBatch(userId, masterKey, batchSize, false);
+      const batchStats = await this.rotateFieldsBatch(
+        userId,
+        masterKey,
+        batchSize,
+        false,
+      );
 
       allStats.totalProcessed += batchStats.processed;
       allStats.totalSkipped += batchStats.skipped;
@@ -161,12 +191,18 @@ export class KeyRotationService {
     }
 
     allStats.startedAt = new Date();
-    this.logger.log(`Full user rotation complete: ${allStats.totalProcessed} total processed`);
+    this.logger.log(
+      `Full user rotation complete: ${allStats.totalProcessed} total processed`,
+    );
 
     return allStats;
   }
 
-  async validateRotationIntegrity(userId: string, masterKey: string, sampleSize: number = 10) {
+  async validateRotationIntegrity(
+    userId: string,
+    masterKey: string,
+    sampleSize: number = 10,
+  ) {
     const fields = await this.prisma.vaultField.findMany({
       where: {
         vaultEntry: {
@@ -187,13 +223,19 @@ export class KeyRotationService {
 
     for (const field of fields) {
       try {
-        const metadata: EncryptionMetadata = JSON.parse(field.encryptionMeta || '{}');
+        const metadata: EncryptionMetadata = JSON.parse(
+          field.encryptionMeta || '{}',
+        );
         const payload: EncryptedPayload = {
           ciphertext: field.encryptedValue,
           metadata,
         };
 
-        this.encryptionServiceV2.decryptWithMetadata(payload, userId, masterKey);
+        this.encryptionServiceV2.decryptWithMetadata(
+          payload,
+          userId,
+          masterKey,
+        );
         results.validated += 1;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
