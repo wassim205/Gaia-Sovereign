@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Param,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
@@ -69,7 +70,7 @@ export class ConsentController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async approveConsent(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: ApproveConsentRequestDto,
     @CurrentUser() user: CurrentUserData,
   ) {
@@ -85,7 +86,7 @@ export class ConsentController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async denyConsent(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
     const result = await this.consentService.denyConsent(id, user.id);
@@ -99,7 +100,7 @@ export class ConsentController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getConsentDetail(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
     const consentRequest = await this.consentService.getConsentDetail(
@@ -112,4 +113,3 @@ export class ConsentController {
     };
   }
 }
-

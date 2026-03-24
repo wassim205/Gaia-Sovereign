@@ -10,6 +10,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { VaultService } from './vault.service';
 import { CreateVaultEntryDto } from './dto/create-vault-entry.dto';
@@ -70,7 +71,7 @@ export class VaultController {
   @Get(':id')
   async findOne(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     const fullUser = await this.usersService.findById(user.id);
     const masterKey = fullUser?.encryptedMasterKey || '';
@@ -81,7 +82,7 @@ export class VaultController {
   @Patch(':id')
   async update(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateVaultEntryDto: UpdateVaultEntryDto,
   ) {
     const fullUser = await this.usersService.findById(user.id);
@@ -104,7 +105,7 @@ export class VaultController {
   @HttpCode(HttpStatus.OK)
   async remove(
     @CurrentUser() user: CurrentUserData,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.vaultService.remove(user.id, id);
   }

@@ -1,15 +1,9 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-  BadRequestException,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { CurrentUserData } from 'src/auth/decorators/current-user.decorator';
 import { AuditLogService } from './services/audit-log.service';
+import { QueryAuditLogsDto } from './dto/query-audit-logs.dto';
 
 /**
  * GS-122: Audit logs endpoint
@@ -35,55 +29,21 @@ export class AuditController {
   @Get('logs')
   async getLogs(
     @CurrentUser() user: CurrentUserData,
-    @Query('from') fromStr?: string,
-    @Query('to') toStr?: string,
-    @Query('app') appId?: string,
-    @Query('field') field?: string,
-    @Query('action') action?: string,
-    @Query('status') status?: string,
-    @Query('limit', new ParseIntPipe({ optional: true }))
-    limit?: number,
-    @Query('offset', new ParseIntPipe({ optional: true }))
-    offset?: number,
+    @Query() query: QueryAuditLogsDto,
   ) {
-    // Parse date ranges
-    let from: Date | undefined;
-    let to: Date | undefined;
-
-    if (fromStr) {
-      from = new Date(fromStr);
-      if (isNaN(from.getTime())) {
-        throw new BadRequestException('Invalid "from" date format');
-      }
-    }
-
-    if (toStr) {
-      to = new Date(toStr);
-      if (isNaN(to.getTime())) {
-        throw new BadRequestException('Invalid "to" date format');
-      }
-    }
-
-    // Validate limit
-    if (limit && (limit < 1 || limit > 200)) {
-      throw new BadRequestException('Limit must be between 1 and 200');
-    }
-
-    // Validate offset
-    if (offset && offset < 0) {
-      throw new BadRequestException('Offset must be non-negative');
-    }
+    const from = query.from ? new Date(query.from) : undefined;
+    const to = query.to ? new Date(query.to) : undefined;
 
     const result = await this.auditLogService.getAuditLogs(user.id, {
       userId: user.id,
-      appId,
-      action,
-      field,
-      status,
+      appId: query.app,
+      action: query.action,
+      field: query.field,
+      status: query.status,
       from,
       to,
-      limit: limit || 50,
-      offset: offset || 0,
+      limit: query.limit || 50,
+      offset: query.offset || 0,
     });
 
     return {

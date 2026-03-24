@@ -47,7 +47,8 @@ export class TokenController {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('Unauthorized')) {
         throw new ForbiddenException('You can only revoke your own tokens');
@@ -61,4 +62,3 @@ export class TokenController {
     }
   }
 }
-

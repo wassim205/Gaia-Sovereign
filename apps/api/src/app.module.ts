@@ -13,6 +13,8 @@ import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module
 import { ConsentModule } from './consent/consent.module';
 import { TokenModule } from './tokens/token.module';
 import { AuditModule } from './audit/audit.module';
+import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { AuditModule } from './audit/audit.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer
+      .apply(LoggerMiddleware, RateLimitMiddleware, CsrfMiddleware)
+      .forRoutes('*');
   }
 }
