@@ -75,11 +75,22 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Unit tests
-        run: pnpm test
+      - name: Unit tests with coverage
+        run: pnpm test:cov -- --coverageReporters=text-summary --coverageReporters=lcov --coverageReporters=json-summary
 
       - name: E2E tests
         run: pnpm test:e2e
 
       - name: Build
         run: pnpm build
+
+      - name: Coverage summary
+        run: |
+          node -e "const fs=require('fs');const p='./coverage/coverage-summary.json';if(!fs.existsSync(p)){console.log('coverage-summary.json not found');process.exit(0)}const s=JSON.parse(fs.readFileSync(p,'utf8')).total;const line=`### Backend Coverage\n\n| Metric | % |\n|---|---:|\n| Lines | ${s.lines.pct} |\n| Statements | ${s.statements.pct} |\n| Functions | ${s.functions.pct} |\n| Branches | ${s.branches.pct} |\n`;fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,line);"
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: apps/api/coverage
+          if-no-files-found: error
