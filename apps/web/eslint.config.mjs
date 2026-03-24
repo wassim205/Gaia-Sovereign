@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ignore service worker and generated files
+    "public/**/*.js",
+    "generate-icons.js",
   ]),
 ]);
 

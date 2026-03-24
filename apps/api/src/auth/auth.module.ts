@@ -20,7 +20,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (configService: ConfigService) => {
         const secret =
           configService.get<string>('JWT_SECRET') || 'your-secret-key';
-        const expiresIn = (configService.get<string>('JWT_EXPIRES_IN') ||
+        const expiresIn: StringValue = (configService.get<string>('JWT_EXPIRES_IN') ||
           '1d') as StringValue;
         return {
           secret,
