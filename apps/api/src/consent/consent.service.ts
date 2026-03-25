@@ -123,6 +123,18 @@ export class ConsentService {
         },
       });
 
+    // GS-82: Log consent request submission
+    await this.auditLogService.createAuditLog({
+      action: 'CONSENT_REQUEST_SUBMIT',
+      resourceType: 'CONSENT_REQUEST',
+      resourceId: consentRequest.id,
+      appId: app.id,
+      requestedFields,
+      status: 'success',
+      userId: app.id,
+      details: `Consent request submitted by app: ${app.name}`,
+    });
+
     return {
       consentRequest,
       app,
@@ -257,7 +269,7 @@ export class ConsentService {
       approvedFields: normalizedApprovedFields,
     });
 
-    // Log consent approval action (GS-121)
+    // GS-82: Log consent approval action
     await this.auditLogService.createAuditLog({
       userId,
       action: 'CONSENT_APPROVE',
@@ -321,7 +333,6 @@ export class ConsentService {
       },
     });
 
-    // Log consent denial action (GS-121)
     const consentData = await this.prisma.consentRequest.findUnique({
       where: { id: consentId },
       select: {
@@ -330,6 +341,7 @@ export class ConsentService {
       },
     });
 
+    // GS-82: Log consent denial action
     await this.auditLogService.createAuditLog({
       userId,
       action: 'CONSENT_DENY',
