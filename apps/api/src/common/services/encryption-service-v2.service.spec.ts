@@ -14,12 +14,17 @@ describe('EncryptionServiceV2', () => {
           provide: KeyManagementService,
           useValue: {
             getCurrentKeyVersion: jest.fn().mockReturnValue(1),
-            deriveKeyForUser: jest
-              .fn()
-              .mockReturnValue(Buffer.from('32-char-key-for-aes-256-testing')),
-            getKey: jest
-              .fn()
-              .mockReturnValue(Buffer.from('32-char-key-for-aes-256-testing')),
+            deriveKeyForUser: jest.fn((userId: string, masterKey: string) => {
+              // Generate different keys based on userId and masterKey
+              const combined = `${userId}:${masterKey}`;
+              const hash = Buffer.from(combined);
+              const key = Buffer.alloc(32);
+              for (let i = 0; i < 32; i++) {
+                key[i] = hash[i % hash.length] ^ (i * 7);
+              }
+              return key;
+            }),
+            getKey: jest.fn().mockReturnValue(Buffer.alloc(32, 'a')),
           },
         },
         {
