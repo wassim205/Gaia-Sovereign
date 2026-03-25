@@ -40,12 +40,12 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
       const response = await request(app.getHttpServer())
         .post('/api/auth/register')
         .send({
-          username: 'test-e2e-user',
+          username: 'teste2euser',
           email: 'test-e2e@example.com',
           password: 'SecurePass123!',
-        })
-        .expect(201);
+        });
 
+      expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('message');
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data.email).toBe('test-e2e@example.com');
@@ -54,20 +54,23 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
 
     it('should reject duplicate email', async () => {
       const userData = {
-        username: 'test-e2e-user1',
+        username: 'teste2euser1',
         email: 'test-e2e-dup@example.com',
         password: 'SecurePass123!',
       };
 
-      await request(app.getHttpServer())
+      const firstResponse = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+        .send(userData);
+      
+      expect(firstResponse.status).toBe(201);
 
-      await request(app.getHttpServer())
+      const dupResponse = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ ...userData, username: 'different' })
-        .expect(409);
+        .send({ ...userData, username: 'differentuser' });
+      
+      expect(dupResponse.status).toBe(400);
+      expect(dupResponse.body.message).toBe('Email already exists');
     });
   });
 
@@ -76,7 +79,7 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
       await request(app.getHttpServer())
         .post('/api/auth/register')
         .send({
-          username: 'test-e2e-login',
+          username: 'teste2elogin',
           email: 'test-e2e-login@example.com',
           password: 'SecurePass123!',
         });
@@ -88,9 +91,9 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
         .send({
           email: 'test-e2e-login@example.com',
           password: 'SecurePass123!',
-        })
-        .expect(200);
+        });
 
+      expect(response.status).toBe(200);
       expect(response.body.data).toHaveProperty('accessToken');
       expect(response.body.data.user.email).toBe('test-e2e-login@example.com');
     });
