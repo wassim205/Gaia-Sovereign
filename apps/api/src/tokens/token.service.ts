@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 
 export interface AccessTokenPayload {
   sub: string; // user ID
@@ -25,6 +26,7 @@ export class TokenService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -158,6 +160,7 @@ export class TokenService {
   /**
    * Revoke an access token by ID
    * GS-127: Revoke token endpoint
+   * GS-75: Log token revocation
    */
   async revokeAccessTokenById(tokenId: string, userId: string) {
     const token = await this.prisma.accessToken.findUnique({
@@ -174,7 +177,6 @@ export class TokenService {
       throw new Error('Token not found');
     }
 
-    // Verify ownership - user can only revoke their own tokens
     if (token.userId !== userId) {
       throw new Error('Unauthorized: Cannot revoke other users tokens');
     }
@@ -189,6 +191,17 @@ export class TokenService {
         approvedFields: true,
         revokedAt: true,
       },
+    });
+
+    // GS-75: Log token revocation
+    await this.auditLogService.createAuditLog({
+      userId,
+      action: 'TOKEN_REVOKE',
+      resourceType: 'ACCESS_TOKEN',
+      resourceId: revokedToken.id,
+      appId: revokedToken.appId,
+      approvedFields: revokedToken.approvedFields,
+      status: 'success',
     });
 
     return revokedToken;
