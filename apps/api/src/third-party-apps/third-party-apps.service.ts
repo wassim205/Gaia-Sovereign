@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/auth/services/password.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 import { CreateThirdPartyAppDto } from './dto/create-third-party-app.dto';
 import { UpdateThirdPartyAppDto } from './dto/update-third-party-app.dto';
 
@@ -47,6 +48,7 @@ export class ThirdPartyAppsService {
   constructor(
     private prisma: PrismaService,
     private passwordService: PasswordService,
+    private auditLogService: AuditLogService,
   ) {}
 
   async create(
@@ -77,6 +79,16 @@ export class ThirdPartyAppsService {
         createdAt: true,
         updatedAt: true,
       },
+    });
+
+    // GS-67: Log app registration
+    await this.auditLogService.createAuditLog({
+      userId: ownerId,
+      action: 'APP_REGISTER',
+      resourceType: 'THIRD_PARTY_APP',
+      resourceId: app.id,
+      details: `App registered: ${app.name}`,
+      status: 'success',
     });
 
     return {
@@ -138,6 +150,16 @@ export class ThirdPartyAppsService {
       },
     });
 
+    // GS-75: Log secret rotation
+    await this.auditLogService.createAuditLog({
+      userId: ownerId,
+      action: 'SECRET_ROTATE',
+      resourceType: 'THIRD_PARTY_APP',
+      resourceId: appId,
+      details: `Secret rotated for app: ${updatedApp.name}`,
+      status: 'success',
+    });
+
     return {
       app: updatedApp,
       clientSecret: newClientSecret,
@@ -161,7 +183,7 @@ export class ThirdPartyAppsService {
       throw new ForbiddenException('App not found or access denied');
     }
 
-    return this.prisma.thirdPartyApp.update({
+    const updatedApp = await this.prisma.thirdPartyApp.update({
       where: { id: appId },
       data: { status },
       select: {
@@ -176,6 +198,18 @@ export class ThirdPartyAppsService {
         updatedAt: true,
       },
     });
+
+    // GS-75: Log status change
+    await this.auditLogService.createAuditLog({
+      userId: ownerId,
+      action: 'APP_STATUS_CHANGE',
+      resourceType: 'THIRD_PARTY_APP',
+      resourceId: appId,
+      details: `App status changed to ${status}`,
+      status: 'success',
+    });
+
+    return updatedApp;
   }
 
   async update(
@@ -195,7 +229,7 @@ export class ThirdPartyAppsService {
       throw new ForbiddenException('App not found or access denied');
     }
 
-    return this.prisma.thirdPartyApp.update({
+    const updatedApp = await this.prisma.thirdPartyApp.update({
       where: { id: appId },
       data: {
         name: dto.name,
@@ -214,5 +248,17 @@ export class ThirdPartyAppsService {
         updatedAt: true,
       },
     });
+
+    // GS-75: Log app configuration edit
+    await this.auditLogService.createAuditLog({
+      userId: ownerId,
+      action: 'APP_EDIT',
+      resourceType: 'THIRD_PARTY_APP',
+      resourceId: appId,
+      details: `App details updated: ${updatedApp.name}`,
+      status: 'success',
+    });
+
+    return updatedApp;
   }
 }

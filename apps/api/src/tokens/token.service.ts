@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 
 export interface AccessTokenPayload {
   sub: string; // user ID
@@ -25,11 +26,13 @@ export class TokenService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private auditLogService: AuditLogService,
   ) {}
 
   /**
    * Generate an access token for a user to access an app's data
    * Returns both the token (opaque) and stores the hash in database
+   * GS-103: Log token issuance in audit logs
    */
   async generateAccessToken(
     options: GenerateTokenOptions,
@@ -52,7 +55,7 @@ export class TokenService {
     const tokenHash = this.hashToken(token);
 
     // Store token hash in database for lookup/revocation
-    await this.prisma.accessToken.create({
+    const storedToken = await this.prisma.accessToken.create({
       data: {
         tokenHash,
         appId: options.appId,
@@ -60,6 +63,17 @@ export class TokenService {
         approvedFields: options.approvedFields,
         expiresAt,
       },
+    });
+
+    // GS-103: Log token issuance
+    await this.auditLogService.createAuditLog({
+      userId: options.userId,
+      action: 'TOKEN_ISSUE',
+      resourceType: 'ACCESS_TOKEN',
+      resourceId: storedToken.id,
+      appId: options.appId,
+      approvedFields: options.approvedFields,
+      status: 'success',
     });
 
     return { token, expiresAt };
@@ -158,6 +172,7 @@ export class TokenService {
   /**
    * Revoke an access token by ID
    * GS-127: Revoke token endpoint
+   * GS-75: Log token revocation
    */
   async revokeAccessTokenById(tokenId: string, userId: string) {
     const token = await this.prisma.accessToken.findUnique({
@@ -174,7 +189,6 @@ export class TokenService {
       throw new Error('Token not found');
     }
 
-    // Verify ownership - user can only revoke their own tokens
     if (token.userId !== userId) {
       throw new Error('Unauthorized: Cannot revoke other users tokens');
     }
@@ -189,6 +203,17 @@ export class TokenService {
         approvedFields: true,
         revokedAt: true,
       },
+    });
+
+    // GS-75: Log token revocation
+    await this.auditLogService.createAuditLog({
+      userId,
+      action: 'TOKEN_REVOKE',
+      resourceType: 'ACCESS_TOKEN',
+      resourceId: revokedToken.id,
+      appId: revokedToken.appId,
+      approvedFields: revokedToken.approvedFields,
+      status: 'success',
     });
 
     return revokedToken;
