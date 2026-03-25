@@ -125,14 +125,14 @@ export class ConsentService {
 
     // GS-82: Log consent request submission
     await this.auditLogService.createAuditLog({
+      userId: '',
       action: 'CONSENT_REQUEST_SUBMIT',
       resourceType: 'CONSENT_REQUEST',
       resourceId: consentRequest.id,
       appId: app.id,
       requestedFields,
       status: 'success',
-      userId: app.id,
-      details: `Consent request submitted by app: ${app.name}`,
+      details: `Consent request submitted for fields: ${requestedFields.join(', ')}`,
     });
 
     return {
@@ -270,6 +270,7 @@ export class ConsentService {
     });
 
     // GS-82: Log consent approval action
+    // GS-98: Ensure approvedFields stores the final approved fields
     await this.auditLogService.createAuditLog({
       userId,
       action: 'CONSENT_APPROVE',
@@ -342,6 +343,7 @@ export class ConsentService {
     });
 
     // GS-82: Log consent denial action
+    // GS-98: Track which fields were requested but denied
     await this.auditLogService.createAuditLog({
       userId,
       action: 'CONSENT_DENY',
@@ -349,6 +351,7 @@ export class ConsentService {
       resourceId: consentId,
       appId: consentData?.appId,
       requestedFields: consentData?.requestedFields || [],
+      approvedFields: [],
       status: 'success',
     });
 
