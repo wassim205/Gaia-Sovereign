@@ -70,6 +70,56 @@ export interface CategoryCount {
   count: number;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  status: 'active' | 'suspended';
+  createdAt: string;
+  fieldsCount: number;
+  tokensCount: number;
+}
+
+export interface App {
+  id: string;
+  name: string;
+  description: string;
+  status: 'pending' | 'approved' | 'blocked';
+  createdAt: string;
+  createdBy: string;
+  requestedFields: string[];
+  tokensCount: number;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  actor: string;
+  target: string;
+  targetType: string;
+  timestamp: string;
+  changes?: Record<string, unknown>;
+}
+
+export interface DashboardStats {
+  totalUsers: number;
+  totalVaults: number;
+  totalApps: number;
+  apiRequests24h: number;
+  threatAlerts: number;
+  userGrowth: Array<{ month: string; users: number }>;
+  apiRequestsWeek: Array<{ day: string; requests: number }>;
+  vaultDistribution: Array<{ name: string; value: number }>;
+}
+
+export interface SystemHealth {
+  apiServer: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  database: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  authService: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  cdn: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -226,6 +276,181 @@ class ApiClient {
 
     return result;
   }
+
+  // Admin endpoints
+  async getUsers(
+    page: number = 1,
+    limit: number = 10,
+    search?: string
+  ): Promise<{ users: User[]; total: number }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(search && { search }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/users?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async getApps(
+    page: number = 1,
+    limit: number = 10,
+    status?: 'pending' | 'approved' | 'blocked'
+  ): Promise<{ apps: App[]; total: number }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(status && { status }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/apps?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async getAppDetails(id: string): Promise<App> {
+    const response = await fetch(`${this.baseUrl}/api/admin/apps/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async updateAppStatus(
+    id: string,
+    status: 'approved' | 'blocked',
+    reason?: string
+  ): Promise<App> {
+    const response = await fetch(`${this.baseUrl}/api/admin/apps/${id}/status`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async updateUserStatus(
+    id: string,
+    status: 'active' | 'suspended',
+    reason?: string
+  ): Promise<User> {
+    const response = await fetch(`${this.baseUrl}/api/admin/users/${id}/status`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async getAuditLogs(
+    page: number = 1,
+    limit: number = 50,
+    filters?: {
+      action?: string;
+      targetType?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<{ logs: AuditLog[]; total: number }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(filters?.action && { action: filters.action }),
+      ...(filters?.targetType && { targetType: filters.targetType }),
+      ...(filters?.startDate && { startDate: filters.startDate }),
+      ...(filters?.endDate && { endDate: filters.endDate }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/audit-logs?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/dashboard/stats`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
+
+  async getSystemHealth(): Promise<SystemHealth> {
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/system/health`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result;
+  }
 }
 
 export const apiClient = new ApiClient(API_URL);
@@ -241,3 +466,28 @@ export const updateVaultEntry = (id: string, data: Partial<CreateVaultEntryData>
   apiClient.updateVaultEntry(id, data);
 export const deleteVaultEntry = (id: string) => apiClient.deleteVaultEntry(id);
 export const getCategoryCounts = () => apiClient.getCategoryCounts();
+
+// Admin API exports
+export const adminApi = {
+  getUsers: (page?: number, limit?: number, search?: string) =>
+    apiClient.getUsers(page, limit, search),
+  getApps: (page?: number, limit?: number, status?: 'pending' | 'approved' | 'blocked') =>
+    apiClient.getApps(page, limit, status),
+  getAppDetails: (id: string) => apiClient.getAppDetails(id),
+  updateAppStatus: (id: string, status: 'approved' | 'blocked', reason?: string) =>
+    apiClient.updateAppStatus(id, status, reason),
+  updateUserStatus: (id: string, status: 'active' | 'suspended', reason?: string) =>
+    apiClient.updateUserStatus(id, status, reason),
+  getAuditLogs: (
+    page?: number,
+    limit?: number,
+    filters?: {
+      action?: string;
+      targetType?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => apiClient.getAuditLogs(page, limit, filters),
+  getDashboardStats: () => apiClient.getDashboardStats(),
+  getSystemHealth: () => apiClient.getSystemHealth(),
+};
