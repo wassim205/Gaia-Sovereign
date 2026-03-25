@@ -191,12 +191,9 @@ describe('VaultService', () => {
         title: 'Updated',
       });
 
-      const result = await service.update(
-        'user-1',
-        'master-key',
-        'vault-1',
-        { title: 'Updated' },
-      );
+      const result = await service.update('user-1', 'master-key', 'vault-1', {
+        title: 'Updated',
+      });
 
       expect(result.title).toBe('Updated');
     });
@@ -261,11 +258,9 @@ describe('VaultService', () => {
         },
       ]);
 
-      const result = await service.getScopedVaultData(
-        'user-1',
-        'master-key',
-        ['email'],
-      );
+      const result = await service.getScopedVaultData('user-1', 'master-key', [
+        'email',
+      ]);
 
       expect(result).toBeDefined();
       // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -284,11 +279,7 @@ describe('VaultService', () => {
         },
       ]);
 
-      await service.getScopedVaultData(
-        'user-1',
-        'master-key',
-        ['email'],
-      );
+      await service.getScopedVaultData('user-1', 'master-key', ['email']);
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(encryptionService.decrypt).toHaveBeenCalled?.();

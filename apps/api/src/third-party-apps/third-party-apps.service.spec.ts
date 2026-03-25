@@ -65,7 +65,7 @@ describe('ThirdPartyAppsService', () => {
         updatedAt: new Date(),
       };
 
-  mockPrismaService.thirdPartyApp.create.mockResolvedValue(mockApp);
+      mockPrismaService.thirdPartyApp.create.mockResolvedValue(mockApp);
 
       const result = await service.create(ownerId, dto);
 
@@ -129,7 +129,7 @@ describe('ThirdPartyAppsService', () => {
         },
       ];
 
-  mockPrismaService.thirdPartyApp.findMany.mockResolvedValue(mockApps);
+      mockPrismaService.thirdPartyApp.findMany.mockResolvedValue(mockApps);
 
       const result = await service.findAll(ownerId);
 
@@ -151,7 +151,7 @@ describe('ThirdPartyAppsService', () => {
       const oldHash = '$argon2id$old';
       const newHash = '$argon2id$new';
 
-  mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
+      mockPrismaService.thirdPartyApp.findFirst.mockResolvedValue({
         id: appId,
         ownerId,
         secretHash: oldHash,

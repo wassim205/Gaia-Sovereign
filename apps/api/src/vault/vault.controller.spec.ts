@@ -79,11 +79,14 @@ describe('VaultController', () => {
     it('should create vault entry', async () => {
       (vaultService.create as jest.Mock).mockResolvedValue(mockVaultEntry);
 
-      const result = await controller.create(mockCurrentUser as CurrentUserData, {
-        title: 'My Passwords',
-        category: 'CREDENTIAL',
-        fields: [{ fieldKey: 'username', value: 'john', fieldType: 'text' }],
-      } as CreateVaultEntryDto);
+      const result = await controller.create(
+        mockCurrentUser as CurrentUserData,
+        {
+          title: 'My Passwords',
+          category: 'CREDENTIAL',
+          fields: [{ fieldKey: 'username', value: 'john', fieldType: 'text' }],
+        } as CreateVaultEntryDto,
+      );
 
       expect(result.message).toBe('Vault entry created successfully');
       expect(result.data.id).toBe('vault-1');
@@ -92,11 +95,14 @@ describe('VaultController', () => {
     it('should fetch user master key', async () => {
       (vaultService.create as jest.Mock).mockResolvedValue(mockVaultEntry);
 
-      await controller.create(mockCurrentUser as CurrentUserData, {
-        title: 'Test',
-        category: 'CREDENTIAL',
-        fields: [],
-      } as CreateVaultEntryDto);
+      await controller.create(
+        mockCurrentUser as CurrentUserData,
+        {
+          title: 'Test',
+          category: 'CREDENTIAL',
+          fields: [],
+        } as CreateVaultEntryDto,
+      );
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(usersService.findById).toHaveBeenCalledWith('user-1');
@@ -116,10 +122,13 @@ describe('VaultController', () => {
 
       (vaultService.findAll as jest.Mock).mockResolvedValue(mockResult);
 
-  const result = await controller.findAll(mockCurrentUser as CurrentUserData, {
-        page: 1,
-        limit: 10,
-      });
+      const result = await controller.findAll(
+        mockCurrentUser as CurrentUserData,
+        {
+          page: 1,
+          limit: 10,
+        },
+      );
 
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
@@ -133,7 +142,7 @@ describe('VaultController', () => {
 
       (vaultService.findAll as jest.Mock).mockResolvedValue(mockResult);
 
-  await controller.findAll(mockCurrentUser as CurrentUserData, {
+      await controller.findAll(mockCurrentUser as CurrentUserData, {
         category: 'passwords',
       });
 
@@ -149,7 +158,7 @@ describe('VaultController', () => {
 
       (vaultService.findAll as jest.Mock).mockResolvedValue(mockResult);
 
-  await controller.findAll(mockCurrentUser as CurrentUserData, {
+      await controller.findAll(mockCurrentUser as CurrentUserData, {
         search: 'passwords',
       });
 
@@ -169,7 +178,6 @@ describe('VaultController', () => {
         mockCounts,
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await controller.getCategoryCounts(
         mockCurrentUser as CurrentUserData,
       );

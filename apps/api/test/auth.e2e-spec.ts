@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
@@ -106,13 +110,11 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
       // Create a test user
-      await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          username: 'test-e2e-login',
-          email: 'test-e2e-login@example.com',
-          password: 'SecurePass123!',
-        });
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        username: 'test-e2e-login',
+        email: 'test-e2e-login@example.com',
+        password: 'SecurePass123!',
+      });
     });
 
     it('should login with valid credentials', async () => {
@@ -180,13 +182,11 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
 
     beforeEach(async () => {
       // Register and login
-      await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          username: 'test-e2e-me',
-          email: 'test-e2e-me@example.com',
-          password: 'SecurePass123!',
-        });
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        username: 'test-e2e-me',
+        email: 'test-e2e-me@example.com',
+        password: 'SecurePass123!',
+      });
 
       const loginResponse = await request(app.getHttpServer())
         .post('/api/auth/login')

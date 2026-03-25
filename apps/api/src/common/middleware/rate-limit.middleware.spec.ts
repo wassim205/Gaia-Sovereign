@@ -68,7 +68,7 @@ describe('RateLimitMiddleware', () => {
       // ignore
     }
 
-  const getHeader = mockResponse.setHeader as jest.Mock;
+    const getHeader = mockResponse.setHeader as jest.Mock;
     expect(getHeader).toHaveBeenCalledWith('Retry-After', '30');
   });
 

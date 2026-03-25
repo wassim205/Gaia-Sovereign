@@ -261,7 +261,6 @@ describe('TokenExtractionMiddleware', () => {
     });
 
     it('should not modify request if no auth header', () => {
-      const originalRequest = { ...mockRequest };
       mockRequest.headers = {};
 
       middleware.use(
