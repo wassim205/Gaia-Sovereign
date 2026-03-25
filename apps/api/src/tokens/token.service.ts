@@ -32,6 +32,7 @@ export class TokenService {
   /**
    * Generate an access token for a user to access an app's data
    * Returns both the token (opaque) and stores the hash in database
+   * GS-103: Log token issuance in audit logs
    */
   async generateAccessToken(
     options: GenerateTokenOptions,
@@ -54,7 +55,7 @@ export class TokenService {
     const tokenHash = this.hashToken(token);
 
     // Store token hash in database for lookup/revocation
-    await this.prisma.accessToken.create({
+    const storedToken = await this.prisma.accessToken.create({
       data: {
         tokenHash,
         appId: options.appId,
@@ -62,6 +63,17 @@ export class TokenService {
         approvedFields: options.approvedFields,
         expiresAt,
       },
+    });
+
+    // GS-103: Log token issuance
+    await this.auditLogService.createAuditLog({
+      userId: options.userId,
+      action: 'TOKEN_ISSUE',
+      resourceType: 'ACCESS_TOKEN',
+      resourceId: storedToken.id,
+      appId: options.appId,
+      approvedFields: options.approvedFields,
+      status: 'success',
     });
 
     return { token, expiresAt };
