@@ -7,7 +7,7 @@ describe('RateLimitMiddleware', () => {
   let middleware: RateLimitMiddleware;
   let rateLimiterService: RateLimiterService;
   let mockRequest: Partial<Request>;
-  let mockResponse: any;
+  let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
 
   beforeEach(() => {
@@ -27,9 +27,8 @@ describe('RateLimitMiddleware', () => {
     };
 
     mockResponse = {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      setHeader: jest.fn(() => mockResponse),
-    } as unknown as Response;
+      setHeader: jest.fn(() => mockResponse as Response),
+    };
 
     mockNext = jest.fn();
   });
@@ -69,8 +68,7 @@ describe('RateLimitMiddleware', () => {
       // ignore
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const getHeader = mockResponse.setHeader as jest.Mock;
+  const getHeader = mockResponse.setHeader as jest.Mock;
     expect(getHeader).toHaveBeenCalledWith('Retry-After', '30');
   });
 
