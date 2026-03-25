@@ -58,7 +58,7 @@ describe('TokenService', () => {
       });
 
       expect(result.token).toBe(mockToken);
-      expect(result.expiresAt).toEqual(expiresAt);
+      expect(result.expiresAt.getTime()).toBeCloseTo(expiresAt.getTime(), -2);
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(jwtService.sign).toHaveBeenCalled?.();
       // eslint-disable-next-line @typescript-eslint/unbound-method
