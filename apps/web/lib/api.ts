@@ -70,6 +70,64 @@ export interface CategoryCount {
   count: number;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  status: 'active' | 'suspended';
+  createdAt: string;
+  fieldsCount: number;
+  tokensCount: number;
+}
+
+export interface App {
+  id: string;
+  name: string;
+  description: string;
+  status: 'pending' | 'approved' | 'blocked';
+  createdAt: string;
+  createdBy: string;
+  requestedFields: string[];
+  tokensCount: number;
+}
+
+export interface AuditLog {
+  id: string;
+  userId?: string;
+  action: string;
+  resourceType?: string;
+  resourceId?: string;
+  appId?: string | null;
+  status?: string;
+  details?: string;
+  timestamp: string;
+  // Optional legacy fields for compatibility
+  actor?: string;
+  target?: string;
+  targetType?: string;
+  changes?: Record<string, unknown>;
+}
+
+
+export interface DashboardStats {
+  totalUsers: number;
+  totalVaults: number;
+  totalApps: number;
+  apiRequests24h: number;
+  threatAlerts: number;
+  userGrowth: Array<{ month: string; users: number }>;
+  apiRequestsWeek: Array<{ day: string; requests: number }>;
+  vaultDistribution: Array<{ name: string; value: number }>;
+}
+
+export interface SystemHealth {
+  apiServer: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  database: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  authService: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+  cdn: { status: 'operational' | 'degraded' | 'down'; uptime: number };
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -226,6 +284,223 @@ class ApiClient {
 
     return result;
   }
+
+  // Admin endpoints
+  async getUsers(
+    page: number = 1,
+    limit: number = 10,
+    search?: string
+  ): Promise<{ data: User[]; meta: { total: number; limit: number; offset: number } }> {
+    const params = new URLSearchParams({
+      offset: String((page - 1) * limit),
+      limit: String(limit),
+      ...(search && { search }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/users?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async getApps(
+    page: number = 1,
+    limit: number = 10,
+    status?: 'pending' | 'approved' | 'blocked'
+  ): Promise<{ data: App[]; meta: { total: number; limit: number; offset: number } }> {
+    const params = new URLSearchParams({
+      offset: String((page - 1) * limit),
+      limit: String(limit),
+      ...(status && { status }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/apps?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async getAppDetails(id: string): Promise<App> {
+    const response = await fetch(`${this.baseUrl}/api/admin/apps/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async updateAppStatus(
+    id: string,
+    status: 'approved' | 'blocked',
+    reason?: string
+  ): Promise<App> {
+    const response = await fetch(`${this.baseUrl}/api/admin/apps/${id}/status`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async updateUserStatus(
+    id: string,
+    status: 'active' | 'suspended',
+    reason?: string
+  ): Promise<User> {
+    const response = await fetch(`${this.baseUrl}/api/admin/users/${id}/status`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async getAuditLogs(
+    page: number = 1,
+    limit: number = 50,
+    filters?: {
+      action?: string;
+      targetType?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<{ data: AuditLog[]; meta: { total: number; limit: number; offset: number } }> {
+    const params = new URLSearchParams({
+      offset: String((page - 1) * limit),
+      limit: String(limit),
+      ...(filters?.action && { action: filters.action }),
+      ...(filters?.targetType && { targetType: filters.targetType }),
+      ...(filters?.startDate && { startDate: filters.startDate }),
+      ...(filters?.endDate && { endDate: filters.endDate }),
+    });
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/audit-logs?${params}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/dashboard/stats`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    return result.data;
+  }
+
+  async getSystemHealth(): Promise<SystemHealth> {
+    const response = await fetch(
+      `${this.baseUrl}/api/admin/system/health`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw result as ErrorResponse;
+    }
+
+    const raw = result?.data;
+
+    // Backend returns { metrics: [...] }, map to object shape
+    if (raw?.metrics && Array.isArray(raw.metrics)) {
+      const byLabel = (label: string) =>
+        raw.metrics.find(
+          (m: { label?: string; status?: string; uptime?: number | string }) =>
+            m?.label === label
+        );
+
+      const toNode = (
+        m: { status?: string; uptime?: number | string } | undefined
+      ): { status: 'operational' | 'degraded' | 'down'; uptime: number } => ({
+        status: (
+          m?.status === 'operational'
+            ? 'operational'
+            : m?.status === 'degraded'
+              ? 'degraded'
+              : 'down'
+        ) as 'operational' | 'degraded' | 'down',
+        uptime:
+          typeof m?.uptime === 'number'
+            ? m.uptime
+            : typeof m?.uptime === 'string'
+              ? Math.max(0, Math.min(1, parseFloat(m.uptime) / 100))
+              : 0,
+      });
+
+      return {
+        apiServer: toNode(byLabel('API Server')),
+        database: toNode(byLabel('Database')),
+        authService: toNode(byLabel('Auth Service')),
+        cdn: toNode(byLabel('CDN')),
+      };
+    }
+
+    // Already-normalized or fallback
+    return {
+      apiServer: raw?.apiServer ?? { status: 'degraded', uptime: 0 },
+      database: raw?.database ?? { status: 'degraded', uptime: 0 },
+      authService: raw?.authService ?? { status: 'degraded', uptime: 0 },
+      cdn: raw?.cdn ?? { status: 'degraded', uptime: 0 },
+    };
+  }
 }
 
 export const apiClient = new ApiClient(API_URL);
@@ -241,3 +516,28 @@ export const updateVaultEntry = (id: string, data: Partial<CreateVaultEntryData>
   apiClient.updateVaultEntry(id, data);
 export const deleteVaultEntry = (id: string) => apiClient.deleteVaultEntry(id);
 export const getCategoryCounts = () => apiClient.getCategoryCounts();
+
+// Admin API exports
+export const adminApi = {
+  getUsers: (page?: number, limit?: number, search?: string) =>
+    apiClient.getUsers(page, limit, search),
+  getApps: (page?: number, limit?: number, status?: 'pending' | 'approved' | 'blocked') =>
+    apiClient.getApps(page, limit, status),
+  getAppDetails: (id: string) => apiClient.getAppDetails(id),
+  updateAppStatus: (id: string, status: 'approved' | 'blocked', reason?: string) =>
+    apiClient.updateAppStatus(id, status, reason),
+  updateUserStatus: (id: string, status: 'active' | 'suspended', reason?: string) =>
+    apiClient.updateUserStatus(id, status, reason),
+  getAuditLogs: (
+    page?: number,
+    limit?: number,
+    filters?: {
+      action?: string;
+      targetType?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => apiClient.getAuditLogs(page, limit, filters),
+  getDashboardStats: () => apiClient.getDashboardStats(),
+  getSystemHealth: () => apiClient.getSystemHealth(),
+};

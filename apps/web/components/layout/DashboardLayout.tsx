@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Database,
   History,
-  Settings,
   Key,
   Users,
   Code2,
@@ -36,10 +35,8 @@ interface SidebarLink {
 const userLinks: SidebarLink[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
   { href: '/dashboard/vault', icon: Database, label: 'My Vault' },
-  { href: '/dashboard/access', icon: Key, label: 'Access Control' },
+  { href: '/active-accesses', icon: Key, label: 'Access Control' },
   { href: '/dashboard/history', icon: History, label: 'Audit Log' },
-  { href: '/developer', icon: Code2, label: 'Developer Portal' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 interface DashboardLayoutProps {
@@ -107,7 +104,7 @@ export default function DashboardLayout({
     if (href === '/dashboard') {
       return pathname === '/dashboard';
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href);
   };
 
   return (
@@ -183,7 +180,7 @@ export default function DashboardLayout({
                 href="/dashboard"
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  pathname.startsWith('/dashboard') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                  pathname?.startsWith('/dashboard') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                 )}
               >
                 <Database className="w-3.5 h-3.5" />
@@ -193,7 +190,7 @@ export default function DashboardLayout({
                 href="/admin"
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  pathname.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                  pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                 )}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -203,7 +200,7 @@ export default function DashboardLayout({
                 href="/developer"
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                  pathname?.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                 )}
               >
                 <Code2 className="w-3.5 h-3.5" />
@@ -308,7 +305,7 @@ export default function DashboardLayout({
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                      pathname?.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                     )}
                   >
                     <Database className="w-3.5 h-3.5" />
@@ -319,7 +316,7 @@ export default function DashboardLayout({
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      pathname.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                      pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                     )}
                   >
                     <Users className="w-3.5 h-3.5" />
@@ -330,7 +327,7 @@ export default function DashboardLayout({
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      pathname.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                      pathname?.startsWith('/developer') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                     )}
                   >
                     <Code2 className="w-3.5 h-3.5" />

@@ -13,6 +13,7 @@ import { ThirdPartyAppsModule } from './third-party-apps/third-party-apps.module
 import { ConsentModule } from './consent/consent.module';
 import { TokenModule } from './tokens/token.module';
 import { AuditModule } from './audit/audit.module';
+import { AdminModule } from './admin/admin.module';
 import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
@@ -31,6 +32,7 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
     ConsentModule,
     TokenModule,
     AuditModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -54,7 +54,7 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
 function ConsentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const consentId = searchParams.get('id');
+  const consentId = searchParams?.get('id');
 
   const [consent, setConsent] = useState<ConsentRequest | null>(null);
   const [loading, setLoading] = useState(true);
