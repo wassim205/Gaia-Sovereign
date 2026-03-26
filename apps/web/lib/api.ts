@@ -94,13 +94,21 @@ export interface App {
 
 export interface AuditLog {
   id: string;
+  userId?: string;
   action: string;
-  actor: string;
-  target: string;
-  targetType: string;
+  resourceType?: string;
+  resourceId?: string;
+  appId?: string | null;
+  status?: string;
+  details?: string;
   timestamp: string;
+  // Optional legacy fields for compatibility
+  actor?: string;
+  target?: string;
+  targetType?: string;
   changes?: Record<string, unknown>;
 }
+
 
 export interface DashboardStats {
   totalUsers: number;
@@ -282,9 +290,9 @@ class ApiClient {
     page: number = 1,
     limit: number = 10,
     search?: string
-  ): Promise<{ users: User[]; total: number }> {
+  ): Promise<{ data: User[]; meta: { total: number; limit: number; offset: number } }> {
     const params = new URLSearchParams({
-      page: String(page),
+      offset: String((page - 1) * limit),
       limit: String(limit),
       ...(search && { search }),
     });
@@ -301,16 +309,16 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async getApps(
     page: number = 1,
     limit: number = 10,
     status?: 'pending' | 'approved' | 'blocked'
-  ): Promise<{ apps: App[]; total: number }> {
+  ): Promise<{ data: App[]; meta: { total: number; limit: number; offset: number } }> {
     const params = new URLSearchParams({
-      page: String(page),
+      offset: String((page - 1) * limit),
       limit: String(limit),
       ...(status && { status }),
     });
@@ -327,7 +335,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async getAppDetails(id: string): Promise<App> {
@@ -341,7 +349,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async updateAppStatus(
@@ -361,7 +369,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async updateUserStatus(
@@ -381,7 +389,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async getAuditLogs(
@@ -393,9 +401,9 @@ class ApiClient {
       startDate?: string;
       endDate?: string;
     }
-  ): Promise<{ logs: AuditLog[]; total: number }> {
+  ): Promise<{ data: AuditLog[]; meta: { total: number; limit: number; offset: number } }> {
     const params = new URLSearchParams({
-      page: String(page),
+      offset: String((page - 1) * limit),
       limit: String(limit),
       ...(filters?.action && { action: filters.action }),
       ...(filters?.targetType && { targetType: filters.targetType }),
@@ -415,7 +423,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async getDashboardStats(): Promise<DashboardStats> {
@@ -432,7 +440,7 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    return result.data;
   }
 
   async getSystemHealth(): Promise<SystemHealth> {
@@ -449,7 +457,49 @@ class ApiClient {
       throw result as ErrorResponse;
     }
 
-    return result;
+    const raw = result?.data;
+
+    // Backend returns { metrics: [...] }, map to object shape
+    if (raw?.metrics && Array.isArray(raw.metrics)) {
+      const byLabel = (label: string) =>
+        raw.metrics.find(
+          (m: { label?: string; status?: string; uptime?: number | string }) =>
+            m?.label === label
+        );
+
+      const toNode = (
+        m: { status?: string; uptime?: number | string } | undefined
+      ): { status: 'operational' | 'degraded' | 'down'; uptime: number } => ({
+        status: (
+          m?.status === 'operational'
+            ? 'operational'
+            : m?.status === 'degraded'
+              ? 'degraded'
+              : 'down'
+        ) as 'operational' | 'degraded' | 'down',
+        uptime:
+          typeof m?.uptime === 'number'
+            ? m.uptime
+            : typeof m?.uptime === 'string'
+              ? Math.max(0, Math.min(1, parseFloat(m.uptime) / 100))
+              : 0,
+      });
+
+      return {
+        apiServer: toNode(byLabel('API Server')),
+        database: toNode(byLabel('Database')),
+        authService: toNode(byLabel('Auth Service')),
+        cdn: toNode(byLabel('CDN')),
+      };
+    }
+
+    // Already-normalized or fallback
+    return {
+      apiServer: raw?.apiServer ?? { status: 'degraded', uptime: 0 },
+      database: raw?.database ?? { status: 'degraded', uptime: 0 },
+      authService: raw?.authService ?? { status: 'degraded', uptime: 0 },
+      cdn: raw?.cdn ?? { status: 'degraded', uptime: 0 },
+    };
   }
 }
 

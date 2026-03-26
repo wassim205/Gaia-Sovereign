@@ -324,11 +324,11 @@ export class AdminService {
 
   // GS-169: Get dashboard statistics
   async getDashboardStats() {
-    const [totalUsers, totalVaults, totalTokens, blockAlerts] =
+    const [totalUsers, totalVaults, totalApps, threatAlerts] =
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.vaultEntry.count(),
-        this.prisma.accessToken.count(),
+        this.prisma.thirdPartyApp.count(),
         this.prisma.thirdPartyApp.count({ where: { status: 'BLOCKED' } }),
       ]);
 
@@ -336,15 +336,43 @@ export class AdminService {
     const userGrowth = await this.getMonthlyUserGrowth();
 
     // Get API requests (this week)
-    const apiRequests = await this.getWeeklyApiRequests();
+    const apiRequestsWeek = await this.getWeeklyApiRequests();
+
+    // Calculate 24h API requests
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const apiRequests24h = await this.prisma.auditLog.count({
+      where: {
+        timestamp: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+    });
+
+    // Calculate vault distribution by category
+    const vaults = await this.prisma.vaultEntry.groupBy({
+      by: ['category'],
+      _count: true,
+    });
+
+    const vaultDistribution = vaults.map((v) => ({
+      name: v.category || 'Uncategorized',
+      value: v._count,
+    }));
 
     return {
       totalUsers,
       totalVaults,
-      totalTokens,
-      blockAlerts,
+      totalApps,
+      threatAlerts,
+      apiRequests24h,
       userGrowth,
-      apiRequests,
+      apiRequestsWeek,
+      vaultDistribution,
     };
   }
 

@@ -98,11 +98,12 @@ function UsersTable({ users, loading, onSuspend, onActivate }: {
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((u) => {
+    const name = (u.name ?? '').toString().toLowerCase();
+    const email = (u.email ?? '').toString().toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   return (
     <GlassCard className="p-6" hover={false}>
@@ -168,14 +169,21 @@ function UsersTable({ users, loading, onSuspend, onActivate }: {
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
-                        {user.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
+                        {(() => {
+                          const base = (user.name || user.email || '').trim();
+                          if (!base) return '?';
+                          const initials = base
+                            .split(/\s+/)
+                            .filter(Boolean)
+                            .map((n) => n[0])
+                            .filter(Boolean)
+                            .join('');
+                          return initials || '?';
+                        })()}
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-white">{user.name}</div>
-                        <div className="text-[10px] text-white/30">{user.email}</div>
+                        <div className="text-sm font-medium text-white">{user.name || '—'}</div>
+                        <div className="text-[10px] text-white/30">{user.email || '—'}</div>
                       </div>
                     </div>
                   </td>
@@ -236,26 +244,26 @@ function SystemHealthComponent({ health, loading }: {
     {
       icon: Server,
       label: 'API Server',
-      status: health?.apiServer.status || 'operational',
-      uptime: health?.apiServer.uptime || 0,
+      status: (health?.apiServer?.status ?? 'degraded') as 'operational' | 'degraded' | 'down',
+      uptime: health?.apiServer?.uptime ?? 0,
     },
     {
       icon: Database,
       label: 'Database',
-      status: health?.database.status || 'operational',
-      uptime: health?.database.uptime || 0,
+      status: (health?.database?.status ?? 'degraded') as 'operational' | 'degraded' | 'down',
+      uptime: health?.database?.uptime ?? 0,
     },
     {
       icon: Lock,
       label: 'Auth Service',
-      status: health?.authService.status || 'operational',
-      uptime: health?.authService.uptime || 0,
+      status: (health?.authService?.status ?? 'degraded') as 'operational' | 'degraded' | 'down',
+      uptime: health?.authService?.uptime ?? 0,
     },
     {
       icon: Wifi,
       label: 'CDN',
-      status: health?.cdn.status || 'operational',
-      uptime: health?.cdn.uptime || 0,
+      status: (health?.cdn?.status ?? 'degraded') as 'operational' | 'degraded' | 'down',
+      uptime: health?.cdn?.uptime ?? 0,
     },
   ];
 
@@ -281,7 +289,7 @@ function SystemHealthComponent({ health, loading }: {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-white/30 font-mono">
-                  {loading ? '-' : `${(metric.uptime * 100).toFixed(2)}%`}
+                  {loading ? '-' : `${(Math.max(0, Number(metric.uptime || 0)) * 100).toFixed(2)}%`}
                 </span>
                 <div
                   className={cn(
@@ -366,7 +374,7 @@ function RecentAudit({ logs, loading }: {
                     {entry.action}
                   </div>
                   <div className="text-[10px] text-white/30">
-                    {entry.actor} → {entry.target}
+                    {entry.details || `${entry.resourceType || 'Resource'}: ${entry.resourceId || 'Unknown'}`}
                   </div>
                 </div>
                 <span className="text-[10px] text-white/20 shrink-0">
@@ -424,8 +432,8 @@ export default function AdminDashboard() {
 
         setStats(statsData);
         setHealth(healthData);
-        setUsers(usersData.users || []);
-        setAuditLogs(logsData.logs || []);
+        setUsers(usersData.data || []);
+        setAuditLogs(logsData.data || []);
       } catch (err) {
         console.error('Error loading admin data:', err);
         setError('Failed to load admin dashboard data');
@@ -485,7 +493,7 @@ export default function AdminDashboard() {
         <StatCard
           icon={Users}
           label="Total Users"
-          value={stats?.totalUsers.toLocaleString() || '-'}
+          value={stats?.totalUsers ? stats.totalUsers.toLocaleString() : '-'}
           change={stats ? '+12.5%' : undefined}
           trend="up"
           loading={loading}
@@ -493,7 +501,7 @@ export default function AdminDashboard() {
         <StatCard
           icon={Database}
           label="Total Vaults"
-          value={stats?.totalVaults.toLocaleString() || '-'}
+          value={stats?.totalVaults ? stats.totalVaults.toLocaleString() : '-'}
           change={stats ? '+8.3%' : undefined}
           trend="up"
           loading={loading}
@@ -501,7 +509,7 @@ export default function AdminDashboard() {
         <StatCard
           icon={Activity}
           label="API Requests (24h)"
-          value={stats?.apiRequests24h.toLocaleString() || '-'}
+          value={stats?.apiRequests24h ? stats.apiRequests24h.toLocaleString() : '-'}
           change={stats ? '+22%' : undefined}
           trend="up"
           loading={loading}
@@ -509,7 +517,7 @@ export default function AdminDashboard() {
         <StatCard
           icon={Shield}
           label="Threat Alerts"
-          value={stats?.threatAlerts.toString() || '-'}
+          value={stats?.threatAlerts !== undefined ? stats.threatAlerts.toString() : '-'}
           loading={loading}
         />
       </div>
@@ -529,13 +537,13 @@ export default function AdminDashboard() {
                 Total Users
               </div>
             </div>
-            <div className="h-64">
+            <div style={{ width: '100%', height: '256px' }}>
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
                 </div>
-              ) : stats?.userGrowth ? (
-                <ResponsiveContainer width="100%" height="100%">
+              ) : stats?.userGrowth && stats.userGrowth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={256}>
                   <AreaChart data={stats.userGrowth}>
                     <defs>
                       <linearGradient
@@ -588,7 +596,11 @@ export default function AdminDashboard() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : null}
+              ) : (
+                <div className="flex items-center justify-center h-full text-white/30 text-sm">
+                  No data available
+                </div>
+              )}
             </div>
           </GlassCard>
         </div>
@@ -600,11 +612,11 @@ export default function AdminDashboard() {
             </h3>
             <p className="text-[10px] text-white/30">By number of fields</p>
           </div>
-          <div className="h-48 flex items-center justify-center">
+          <div style={{ width: '100%', height: '192px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {loading ? (
               <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
-            ) : stats?.vaultDistribution ? (
-              <ResponsiveContainer width="100%" height="100%">
+            ) : stats?.vaultDistribution && stats.vaultDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={192}>
                 <PieChart>
                   <Pie
                     data={stats.vaultDistribution}
@@ -627,10 +639,12 @@ export default function AdminDashboard() {
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-            ) : null}
+            ) : (
+              <div className="text-white/30 text-sm">No data available</div>
+            )}
           </div>
           <div className="space-y-2 mt-4">
-            {stats?.vaultDistribution.map((item) => (
+            {stats?.vaultDistribution && stats.vaultDistribution.map((item) => (
               <div
                 key={item.name}
                 className="flex items-center justify-between text-xs"
@@ -664,13 +678,13 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-semibold text-white">API Requests</h3>
             <p className="text-[10px] text-white/30">This week</p>
           </div>
-          <div className="h-48">
+          <div style={{ width: '100%', height: '192px' }}>
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
               </div>
             ) : stats?.apiRequestsWeek ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={192}>
                 <BarChart data={stats.apiRequestsWeek}>
                   <CartesianGrid
                     stroke="rgba(255,255,255,0.03)"

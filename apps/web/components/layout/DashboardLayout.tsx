@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Database,
   History,
-  Settings,
   Key,
   Users,
   Code2,
@@ -36,10 +35,8 @@ interface SidebarLink {
 const userLinks: SidebarLink[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
   { href: '/dashboard/vault', icon: Database, label: 'My Vault' },
-  { href: '/dashboard/access', icon: Key, label: 'Access Control' },
+  { href: '/active-accesses', icon: Key, label: 'Access Control' },
   { href: '/dashboard/history', icon: History, label: 'Audit Log' },
-  { href: '/developer', icon: Code2, label: 'Developer Portal' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 interface DashboardLayoutProps {
