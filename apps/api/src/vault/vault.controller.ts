@@ -12,6 +12,12 @@ import {
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { VaultService } from './vault.service';
 import { CreateVaultEntryDto } from './dto/create-vault-entry.dto';
 import { UpdateVaultEntryDto } from './dto/update-vault-entry.dto';
@@ -24,6 +30,8 @@ import { UsersService } from 'src/users/users.service';
 
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('bearer')
+@ApiTags('Vault')
 export class VaultController {
   constructor(
     private readonly vaultService: VaultService,
@@ -32,6 +40,18 @@ export class VaultController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create vault entry',
+    description: 'Add a new encrypted entry to the secure vault',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Vault entry created successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
   async create(
     @CurrentUser() user: CurrentUserData,
     @Body() createVaultEntryDto: CreateVaultEntryDto,
