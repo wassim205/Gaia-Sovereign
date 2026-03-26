@@ -79,6 +79,9 @@ jobs:
       - name: Unit tests with coverage
         run: pnpm test:cov
 
+      - name: Validate OpenAPI specification
+        run: pnpm docs:validate
+
       - name: E2E tests
         run: pnpm test:e2e
 
