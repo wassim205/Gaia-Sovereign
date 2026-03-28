@@ -6,6 +6,32 @@
 
 ---
 
+## Documentation / Onboarding
+
+- **Architecture & décisions sécurité (résumé + liens)**: voir la section "Architecture & sécurité" ci-dessous
+- **Security Decision Log (SDL)**: `docs/SECURITY_DECISION_LOG.md`
+- **User Guide (Consent flow + Developer Portal)**: `docs/USER_GUIDE.md`
+- **Consent Flow Testing Guide**: `CONSENT_TESTING_GUIDE.md`
+- **Database schema (high level)**: `DATABASE_SCHEMA.md`
+
+---
+
+## Architecture & sécurité (résumé)
+
+### Architecture (haut niveau)
+
+- **Web app** (Next.js): interface utilisateur (Vault, Consent screen, Developer Portal)
+- **API** (NestJS): auth, vault, consent, tokens, audit logs
+- **Database** (PostgreSQL via Prisma): persistance des utilisateurs, apps tierces, consents, tokens, logs
+
+### Décisions sécurité (pour le "pourquoi", voir le SDL)
+
+- **Chiffrement au repos (field-level)**: chiffrement des valeurs de la vault par champ (AES-256-GCM) afin d’aligner le modèle de sécurité avec le consentement par scope/champ.
+- **Jetons d’accès 3rd-party**: jeton **JWT signé** présenté par les apps, avec **hash stocké en DB** pour permettre révocation immédiate et contrôle serveur (source of truth).
+- **KMS (stratégie)**: abstraction pour supporter une intégration KMS en production, tout en gardant une dérivation locale des clés en dev.
+
+Référence détaillée: `docs/SECURITY_DECISION_LOG.md`
+
 ## 1. Contexte et objectifs
 
 ### Contexte
