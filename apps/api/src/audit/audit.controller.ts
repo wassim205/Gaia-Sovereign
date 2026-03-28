@@ -5,27 +5,12 @@ import type { CurrentUserData } from 'src/auth/decorators/current-user.decorator
 import { AuditLogService } from './services/audit-log.service';
 import { QueryAuditLogsDto } from './dto/query-audit-logs.dto';
 
-/**
- * GS-122: Audit logs endpoint
- * GET /api/audit/logs?user_id=&from=&to=&app=&field=
- */
 @Controller('audit')
 @UseGuards(JwtAuthGuard)
 export class AuditController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
-  /**
-   * Get audit logs with optional filtering
-   * Query parameters:
-   * - from: ISO datetime string for start range
-   * - to: ISO datetime string for end range
-   * - app: App ID to filter by
-   * - field: Field name to filter by (checks accessedFields)
-   * - action: Action type to filter by (e.g., VAULT_READ, CONSENT_APPROVE)
-   * - status: Log status to filter by (success, error, archived)
-   * - limit: Results per page (default 50, max 200)
-   * - offset: Pagination offset (default 0)
-   */
+  // Get audit logs with optional filtering
   @Get('logs')
   async getLogs(
     @CurrentUser() user: CurrentUserData,

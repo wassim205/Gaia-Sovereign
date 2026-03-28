@@ -36,8 +36,6 @@ export class AuditLogService {
 
   /**
    * Create an audit log entry
-   * GS-120: Log vault data access with field tracking
-   * GS-121: Log consent actions (approve/deny/revoke)
    */
   async createAuditLog(dto: CreateAuditLogDto) {
     return this.prisma.auditLog.create({
@@ -60,7 +58,6 @@ export class AuditLogService {
 
   /**
    * Get audit logs with filtering
-   * GS-122: Implement audit logs endpoint with filters
    */
   async getAuditLogs(userId: string, filters: AuditLogFilters) {
     const where: Prisma.AuditLogWhereInput = {
@@ -155,7 +152,6 @@ export class AuditLogService {
 
   /**
    * Delete audit logs older than specified date
-   * GS-123: Implement retention policy
    */
   async deleteOlderThan(beforeDate: Date): Promise<{ count: number }> {
     const result = await this.prisma.auditLog.deleteMany({
@@ -173,7 +169,6 @@ export class AuditLogService {
 
   /**
    * Archive audit logs (set status to archived instead of deleting)
-   * GS-123: Alternative to deletion for compliance
    */
   async archiveOlderThan(beforeDate: Date): Promise<{ count: number }> {
     const result = await this.prisma.auditLog.updateMany({
