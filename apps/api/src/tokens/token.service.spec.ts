@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { TokenService } from './token.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 
 describe('TokenService', () => {
   let service: TokenService;
@@ -32,6 +33,12 @@ describe('TokenService', () => {
             },
           },
         },
+        {
+          provide: AuditLogService,
+          useValue: {
+            createAuditLog: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -46,6 +53,7 @@ describe('TokenService', () => {
 
       (jwtService.sign as jest.Mock).mockReturnValue(mockToken);
       (prisma.accessToken.create as jest.Mock).mockResolvedValue({
+        id: 'token-1',
         tokenHash: 'hash123',
         expiresAt,
       });
@@ -68,6 +76,7 @@ describe('TokenService', () => {
     it('should use default TTL if not provided', async () => {
       (jwtService.sign as jest.Mock).mockReturnValue(mockToken);
       (prisma.accessToken.create as jest.Mock).mockResolvedValue({
+        id: 'token-1',
         tokenHash: 'hash123',
         expiresAt: new Date(),
       });

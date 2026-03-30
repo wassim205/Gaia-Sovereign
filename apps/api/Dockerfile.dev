@@ -1,0 +1,10 @@
+FROM node:20-alpine
+WORKDIR /app
+RUN apk add --no-cache openssl python3 make g++
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+RUN npm install --ignore-engines
+RUN npx prisma generate
+COPY . .
+EXPOSE 4000
+CMD ["npm", "run", "start:dev"]

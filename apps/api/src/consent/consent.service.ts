@@ -123,17 +123,22 @@ export class ConsentService {
         },
       });
 
-    // GS-82: Log consent request submission
-    await this.auditLogService.createAuditLog({
-      userId: '',
-      action: 'CONSENT_REQUEST_SUBMIT',
-      resourceType: 'CONSENT_REQUEST',
-      resourceId: consentRequest.id,
-      appId: app.id,
-      requestedFields,
-      status: 'success',
-      details: `Consent request submitted for fields: ${requestedFields.join(', ')}`,
-    });
+    // GS-82: Log consent request submission (optional - happens before user auth)
+    try {
+      await this.auditLogService.createAuditLog({
+        userId: 'SYSTEM',
+        action: 'CONSENT_REQUEST_SUBMIT',
+        resourceType: 'CONSENT_REQUEST',
+        resourceId: consentRequest.id,
+        appId: app.id,
+        requestedFields,
+        status: 'success',
+        details: `Consent request submitted for fields: ${requestedFields.join(', ')}`,
+      });
+    } catch (error) {
+      // Audit log failure should not block consent request creation
+      console.warn('Failed to create audit log for consent request:', error);
+    }
 
     return {
       consentRequest,

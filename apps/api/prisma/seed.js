@@ -315,13 +315,47 @@ async function main() {
   // ============================================
   console.log('🚀 Seeding Third-Party Applications...');
 
+  // Hash app secrets
+  const shopNowSecret = 'shopnow-secret-key-123';
+  const deliverItSecret = 'deliverit-secret-key-456';
+  const socialHubSecret = 'socialhub-secret-key-789';
+  const bankAppSecret = 'bankapp-secret-key-999';
+
+  const shopNowSecretHash = await argon2.hash(shopNowSecret, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
+
+  const deliverItSecretHash = await argon2.hash(deliverItSecret, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
+
+  const socialHubSecretHash = await argon2.hash(socialHubSecret, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
+
+  const bankAppSecretHash = await argon2.hash(bankAppSecret, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
+
   const shopNowApp = await prisma.thirdPartyApp.create({
     data: {
       ownerId: adminUser.id,
       name: 'ShopNow',
       description: 'E-commerce shopping platform - Complete your shopping experience',
-      clientId: 'shopnow-client-id-' + Date.now(),
-      secretHash: 'shopnow-secret-hashed-key-123',
+      clientId: 'shopnow-demo-client-id',
+      secretHash: shopNowSecretHash,
       redirectUris: ['https://shopnow.example.com/callback'],
       status: 'ACTIVE',
     },
@@ -332,8 +366,8 @@ async function main() {
       ownerId: adminUser.id,
       name: 'DeliverIt',
       description: 'Food and package delivery service with real-time tracking',
-      clientId: 'deliverit-client-id-' + Date.now(),
-      secretHash: 'deliverit-secret-hashed-key-456',
+      clientId: 'deliverit-demo-client-id',
+      secretHash: deliverItSecretHash,
       redirectUris: ['https://deliverit.example.com/callback'],
       status: 'ACTIVE',
     },
@@ -344,8 +378,8 @@ async function main() {
       ownerId: adminUser.id,
       name: 'SocialHub',
       description: 'Social networking platform connecting friends globally',
-      clientId: 'socialhub-client-id-' + Date.now(),
-      secretHash: 'socialhub-secret-hashed-key-789',
+      clientId: 'socialhub-demo-client-id',
+      secretHash: socialHubSecretHash,
       redirectUris: ['https://socialhub.example.com/callback'],
       status: 'ACTIVE',
     },
@@ -356,8 +390,8 @@ async function main() {
       ownerId: adminUser.id,
       name: 'BankApp',
       description: 'Mobile banking application',
-      clientId: 'bankapp-client-id-' + Date.now(),
-      secretHash: 'bankapp-secret-hashed-key-999',
+      clientId: 'bankapp-demo-client-id',
+      secretHash: bankAppSecretHash,
       redirectUris: ['https://bankapp.example.com/callback'],
       status: 'BLOCKED',
     },
@@ -606,15 +640,19 @@ async function main() {
   console.log('🚀 THIRD-PARTY APPLICATIONS:');
   console.log('  ├─ ShopNow (Status: ACTIVE)');
   console.log('  │  Description: E-commerce shopping platform');
+  console.log('  │  Client Secret: shopnow-secret-key-123');
   console.log('  │');
   console.log('  ├─ DeliverIt (Status: ACTIVE)');
   console.log('  │  Description: Food and package delivery service');
+  console.log('  │  Client Secret: deliverit-secret-key-456');
   console.log('  │');
   console.log('  ├─ SocialHub (Status: ACTIVE)');
   console.log('  │  Description: Social networking platform');
+  console.log('  │  Client Secret: socialhub-secret-key-789');
   console.log('  │');
   console.log('  └─ BankApp (Status: BLOCKED)');
-  console.log('     Description: Mobile banking application\n');
+  console.log('     Description: Mobile banking application');
+  console.log('     Client Secret: bankapp-secret-key-999\n');
 
   console.log('🔑 ACCESS TOKENS & PERMISSIONS:');
   console.log('  ├─ John → ShopNow: [email, phone, address, name] (expires in 90 days)');

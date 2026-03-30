@@ -186,16 +186,18 @@ export default function DashboardLayout({
                 <Database className="w-3.5 h-3.5" />
                 <span>Dashboard</span>
               </Link>
-              <Link
-                href="/admin"
-                className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
-                )}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Admin</span>
-              </Link>
+              {userRole === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                    pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                  )}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Admin</span>
+                </Link>
+              )}
               <Link
                 href="/developer"
                 className={cn(
@@ -311,17 +313,19 @@ export default function DashboardLayout({
                     <Database className="w-3.5 h-3.5" />
                     <span>Dashboard</span>
                   </Link>
-                  <Link
-                    href="/admin"
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
-                    )}
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Admin</span>
-                  </Link>
+                  {userRole === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                        pathname?.startsWith('/admin') ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                      )}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
                   <Link
                     href="/developer"
                     onClick={() => setMobileOpen(false)}
@@ -372,12 +376,19 @@ export default function DashboardLayout({
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-white/5">
-              <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+              <div
+                className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold"
+                suppressHydrationWarning
+              >
                 {userName.split(' ').map((n: string) => n[0]).join('')}
               </div>
               <div className="hidden xl:block">
-                <div className="text-sm font-medium text-white">{userName}</div>
-                <div className="text-[10px] text-white/30">{userRole}</div>
+                <div className="text-sm font-medium text-white" suppressHydrationWarning>
+                  {userName}
+                </div>
+                <div className="text-[10px] text-white/30" suppressHydrationWarning>
+                  {userRole}
+                </div>
               </div>
             </div>
           </div>

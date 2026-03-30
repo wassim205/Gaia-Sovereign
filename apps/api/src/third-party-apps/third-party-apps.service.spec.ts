@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ThirdPartyAppsService } from './third-party-apps.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/auth/services/password.service';
+import { AuditLogService } from 'src/audit/services/audit-log.service';
 
 describe('ThirdPartyAppsService', () => {
   let service: ThirdPartyAppsService;
@@ -23,12 +24,17 @@ describe('ThirdPartyAppsService', () => {
     comparePassword: jest.fn(),
   };
 
+  const mockAuditLogService = {
+    createAuditLog: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ThirdPartyAppsService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: PasswordService, useValue: mockPasswordService },
+        { provide: AuditLogService, useValue: mockAuditLogService },
       ],
     }).compile();
 

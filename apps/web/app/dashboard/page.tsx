@@ -290,6 +290,7 @@ export default function UserDashboard() {
 
     const firstField = entry.fields[0];
     return {
+      id: entry.id,
       icon: iconMap[entry.category] || Database,
       label: entry.title,
       value: firstField?.value || 'No data',
@@ -297,9 +298,9 @@ export default function UserDashboard() {
     };
   });
 
-  const toggleField = (label: string) => {
+  const toggleField = (id: string) => {
     setRevealedFields((prev) =>
-      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label]
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     );
   };
 
@@ -377,13 +378,13 @@ export default function UserDashboard() {
               <div className="space-y-2">
                 {vaultItems.map((item) => (
                   <VaultItem
-                    key={item.label}
+                    key={item.id}
                     icon={item.icon}
                     label={item.label}
                     value={item.value}
                     encrypted={item.encrypted}
-                    isRevealed={revealedFields.includes(item.label)}
-                    onToggle={() => toggleField(item.label)}
+                    isRevealed={revealedFields.includes(item.id)}
+                    onToggle={() => toggleField(item.id)}
                   />
                 ))}
               </div>

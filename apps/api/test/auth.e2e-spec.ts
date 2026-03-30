@@ -62,13 +62,13 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
       const firstResponse = await request(app.getHttpServer())
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(firstResponse.status).toBe(201);
 
       const dupResponse = await request(app.getHttpServer())
         .post('/api/auth/register')
         .send({ ...userData, username: 'differentuser' });
-      
+
       expect(dupResponse.status).toBe(400);
       expect(dupResponse.body.message).toBe('Email already exists');
     });
@@ -76,13 +76,11 @@ describe('Auth Endpoints (e2e) - GS-29', () => {
 
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
-      await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send({
-          username: 'teste2elogin',
-          email: 'test-e2e-login@example.com',
-          password: 'SecurePass123!',
-        });
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        username: 'teste2elogin',
+        email: 'test-e2e-login@example.com',
+        password: 'SecurePass123!',
+      });
     });
 
     it('should login with valid credentials', async () => {
