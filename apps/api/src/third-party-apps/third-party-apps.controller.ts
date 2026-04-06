@@ -18,6 +18,7 @@ import { AppOwnerOrAdminGuard } from './guards/app-owner-or-admin.guard';
 import { CreateThirdPartyAppDto } from './dto/create-third-party-app.dto';
 import { UpdateThirdPartyAppDto } from './dto/update-third-party-app.dto';
 import { ChangeAppStatusDto } from './dto/change-app-status.dto';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
 
 @Controller('third-party-apps')
 @UseGuards(JwtAuthGuard)
@@ -102,6 +103,17 @@ export class ThirdPartyAppsController {
     return {
       message: 'Third-party app updated successfully',
       data: app,
+    };
+  }
+
+  @Get('getAllApps')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminGuard)
+  async getAllApps() {
+    const apps = await this.appsService.getAllApps();
+
+    return {
+      data: apps,
     };
   }
 }

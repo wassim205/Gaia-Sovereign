@@ -261,4 +261,9 @@ export class ThirdPartyAppsService {
 
     return updatedApp;
   }
+
+  async getAllApps() {
+    const apps = await this.prisma.thirdPartyApp.findMany();
+    return apps;
+  }
 }

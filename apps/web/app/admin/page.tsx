@@ -1,38 +1,55 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AdminDashboard from '../../pages/AdminDashboard';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import AdminDashboard from "../../pages/AdminDashboard";
 
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [appCount, setAppCount] = useState(0);
   useEffect(() => {
     // Check if user is logged in and has admin role
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
     if (!token || !userStr) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
     try {
       const user = JSON.parse(userStr);
-      if (user.role !== 'ADMIN') {
-        router.push('/dashboard');
+      if (user.role !== "ADMIN") {
+        router.push("/dashboard");
         return;
       }
       setIsAuthorized(true);
+
+      const res = fetch(
+        "http://localhost:4000/api/third-party-apps/getAllApps",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+        .then((res) => res.json())
+        .then((app) => {
+          console.log(app);
+          setAppCount(app.data.length);
+        });
+
+      // .then(res => )
+      // console.log();
     } catch {
-      router.push('/login');
+      router.push("/login");
       return;
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -51,5 +68,10 @@ export default function AdminPage() {
     return null;
   }
 
-  return <AdminDashboard />;
+  return (
+    <>
+      <p className="bg-red-500">test {appCount}</p>
+      {/* <AdminDashboard />; */}
+    </>
+  );
 }
